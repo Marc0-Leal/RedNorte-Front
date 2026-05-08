@@ -17,7 +17,7 @@ function NavBar() {
             <Nav.Link href="/">Inicio</Nav.Link>
             <Nav.Link path="/agendar-cita"> Agendar cita</Nav.Link>
             <Nav.Link path="/crear-usuario"> Crear Usuario</Nav.Link>
-            <Nav.Link path="/iniciar-sesion"> Iniciar Session</Nav.Link>
+            <Nav.Link href="/LogIn"> Iniciar Session</Nav.Link>
           </Nav>
         </Navbar.Collapse>
       </Container>
