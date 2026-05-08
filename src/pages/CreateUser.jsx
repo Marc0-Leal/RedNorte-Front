@@ -124,7 +124,7 @@ export default function CreateUser() {
         <button
           onClick={handleCreateUser}
           style={{
-            backgroundColor: "#4f46e5",
+            backgroundColor: "#ee5d69",
             color: "#ffffff",
             border: "none",
             borderRadius: "8px",
