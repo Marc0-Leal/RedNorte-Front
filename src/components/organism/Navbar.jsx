@@ -15,9 +15,9 @@ function NavBar() {
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="me-auto">
             <Nav.Link href="/">Inicio</Nav.Link>
-            <Nav.Link path="/agendar-cita"> Agendar cita</Nav.Link>
             <Nav.Link href="/CreateUser"> Crear Usuario</Nav.Link>
-            <Nav.Link path="/iniciar-sesion"> Iniciar Session</Nav.Link>
+            <Nav.Link href="/Agendar-cita"> Agendar cita</Nav.Link>
+            <Nav.Link href="/LogIn"> Iniciar Session</Nav.Link>
           </Nav>
         </Navbar.Collapse>
       </Container>
