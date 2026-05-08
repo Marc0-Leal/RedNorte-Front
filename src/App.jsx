@@ -4,7 +4,7 @@ import Home from './pages/Home'
 {/*import CreateUser from './pages/CreateUser'
 import Login from './pages/LogIn'
 import AgendarCita from './pages/Agendar-Cita'*/}
-
+import CreateUser from './pages/CreateUser'
 
 function App() {
  return (
@@ -15,6 +15,7 @@ function App() {
        {/*<Route path="/crear-usuario" element={<CreateUser />} />
        <Route path="/iniciar-sesion" element={<LogIn />} />
        <Route path="/agendar-cita" element={<AgendarCita />} />*/}
+       <Route path="/CreateUser" element={<CreateUser />} />
      </Routes>
    </>
  );
