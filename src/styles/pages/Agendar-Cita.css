@@ -1,0 +1,163 @@
+/* ── Variables de marca RedNorte ── */
+:root {
+  --rn-pink: #e8365d;
+  --rn-pink-dark: #c42b4e;
+  --rn-pink-light: rgba(232, 54, 93, 0.1);
+  --rn-dark: #2c2c2c;
+  --rn-gray: #f7f7f7;
+  --rn-text: #333;
+  --rn-text-muted: #666;
+  --rn-white: #ffffff;
+  --rn-radius: 12px;
+}
+
+/* ── Página completa ── */
+.schedules-page {
+  width: 100%;
+  min-height: 100vh;
+  background: var(--rn-gray);
+}
+
+/* ── Hero header ── */
+.schedules-hero {
+  background-color: var(--rn-pink);
+  padding: 3rem 2rem;
+  text-align: center;
+}
+
+.schedules-hero-title {
+  color: var(--rn-white) !important;
+  font-size: 2.5rem !important;
+  font-weight: 700 !important;
+  margin: 0 0 0.5rem !important;
+  letter-spacing: -0.5px;
+}
+
+.schedules-hero-sub {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 1rem;
+  margin: 0;
+}
+
+/* ── Alerta ── */
+.schedules-alert-wrapper {
+  position: fixed;
+  top: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  width: 420px;
+  max-width: 90vw;
+}
+
+.schedules-alert {
+  background-color: #d4edda;
+  border-color: #c3e6cb;
+  color: #155724;
+  border-radius: var(--rn-radius);
+  font-weight: 500;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+
+/* ── Contenedor principal ── */
+.schedules-container {
+  padding: 2rem 1rem 3rem;
+  max-width: 900px !important;
+}
+
+/* ── Cards ── */
+.schedules-card {
+  background: var(--rn-white);
+  border-radius: var(--rn-radius);
+  padding: 1.75rem 2rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.schedules-card-dark {
+  background-color: #3a3a3a;
+}
+
+.schedules-price-row {
+  background: var(--rn-white);
+}
+
+/* ── Títulos de sección ── */
+.schedules-section-title {
+  font-size: 1.1rem !important;
+  font-weight: 700 !important;
+  color: var(--rn-pink) !important;
+  margin-bottom: 1.25rem !important;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--rn-pink-light);
+}
+
+.schedules-section-title-light {
+  color: var(--rn-white) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.2);
+}
+
+/* ── Labels ── */
+.schedules-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--rn-text-muted);
+  margin-bottom: 0;
+}
+
+.schedules-label-light {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* ── Inputs ── */
+.schedules-input {
+  border-radius: 8px !important;
+  border: 1.5px solid #e0e0e0 !important;
+  font-size: 0.9rem !important;
+  transition: border-color 0.2s ease;
+}
+
+.schedules-input:focus {
+  border-color: var(--rn-pink) !important;
+  box-shadow: 0 0 0 3px rgba(232, 54, 93, 0.12) !important;
+  outline: none;
+}
+
+/* ── Botones ── */
+.schedules-btn-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.schedules-btn-primary {
+  background-color: var(--rn-pink) !important;
+  border-color: var(--rn-pink) !important;
+  color: var(--rn-white) !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  padding: 0.6rem 2rem !important;
+  transition: background-color 0.2s ease, transform 0.1s ease !important;
+}
+
+.schedules-btn-primary:hover {
+  background-color: var(--rn-pink-dark) !important;
+  border-color: var(--rn-pink-dark) !important;
+  transform: translateY(-1px);
+}
+
+.schedules-btn-outline {
+  background-color: transparent !important;
+  border: 1.5px solid #ccc !important;
+  color: var(--rn-text-muted) !important;
+  font-weight: 500 !important;
+  border-radius: 8px !important;
+  padding: 0.6rem 1.5rem !important;
+  transition: border-color 0.2s ease !important;
+}
+
+.schedules-btn-outline:hover {
+  border-color: var(--rn-pink) !important;
+  color: var(--rn-pink) !important;
+}
