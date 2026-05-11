@@ -1,9 +1,47 @@
 import Cookies from "js-cookie";
 import { Navigate } from "react-router-dom";
 import "./../styles/pages/Admin.css";
+import { useEffect, useState } from "react";
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "../firebase";
+
 
 export default function AdminDashboard() {
   const rol = Cookies.get("rol");
+  const [usuarios, setUsuarios] = useState([]);
+
+useEffect(() => {
+
+  const obtenerUsuarios = async () => {
+
+    try {
+
+      const querySnapshot = await getDocs(
+        collection(db, "usuarios")
+      );
+
+      const listaUsuarios = [];
+
+      querySnapshot.forEach((doc) => {
+
+        listaUsuarios.push({
+          id: doc.id,
+          ...doc.data(),
+        });
+      });
+
+      setUsuarios(listaUsuarios);
+
+    } catch (error) {
+
+      console.log(error);
+
+    }
+  };
+
+  obtenerUsuarios();
+
+}, []);
 
   // Protección de ruta
   if (rol !== "admin") {
@@ -97,6 +135,49 @@ export default function AdminDashboard() {
                 <td>Completada</td>
               </tr>
             </tbody>
+          </table>
+
+        </section>
+
+        <section className="table-section">
+
+          <h2>Usuarios registrados</h2>
+
+          <table>
+
+            <thead>
+              <tr>
+                <th>RUT</th>
+                <th>Nombre</th>
+                <th>Apellido</th>
+                <th>Correo</th>
+                <th>Rol</th>
+              </tr>
+            </thead>
+
+            <tbody>
+
+              {
+                usuarios.map((usuario) => (
+
+                  <tr key={usuario.id}>
+
+                    <td>{usuario.rut}</td>
+
+                    <td>{usuario.nombre}</td>
+
+                    <td>{usuario.apellido}</td>
+
+                    <td>{usuario.email}</td>
+
+                    <td>{usuario.rol}</td>
+
+                  </tr>
+                ))
+              }
+
+            </tbody>
+
           </table>
 
         </section>
