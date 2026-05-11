@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebase";
 
@@ -6,6 +8,7 @@ import { doc, setDoc } from "firebase/firestore";
 import { db } from "../firebase";
 
 export default function CreateUser() {
+  const navigate = useNavigate();
   const [rut, setRut] = useState("");
   const [rol, setRol] = useState("usuario");
   const [nombre, setNombre] = useState("");
@@ -33,6 +36,9 @@ export default function CreateUser() {
       });
 
       setSuccess("Usuario creado con éxito: " + userCredential.user.email);
+      setTimeout(() => {
+      navigate("/");
+      }, 2000);
     } catch (error) {
       if (error.code === "auth/weak-password") {
         setError("La contraseña debe tener al menos 6 caracteres.");
@@ -44,7 +50,9 @@ export default function CreateUser() {
         setError(error.message);
       }
     }
+
   };
+
 
   return (
     <div style={{
