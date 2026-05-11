@@ -1,0 +1,81 @@
+.pagina {
+  min-height: 100vh;
+  background: #ffffff;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 40px;
+  font-family: Arial, sans-serif;
+}
+
+.contenedor {
+  width: 90%;
+  max-width: 700px;
+}
+
+.titulo {
+  text-align: center;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.header,
+.card {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.5fr;
+  align-items: center;
+  padding: 0 20px;
+}
+.card {
+  background: white;
+  border-radius: 30px;
+  padding: 15px 0;
+  margin-bottom: 15px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.acciones {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.fecha {
+  font-weight: bold;
+}
+
+.estado {
+  font-weight: bold;
+}
+
+.estado.activa {
+  color: green ;
+}
+
+.estado.expirada {
+  color: gray;
+}
+
+.btn {
+  border: none;
+  padding: 6px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.btn-verde {
+  background: #28a745 !important;
+  color: white;
+}
+
+.btn-rojo {
+  background: #dc3545 !important;
+  color: white;
+}
+
+.btn-deshabilitado {
+  background: #ccc;
+  color: #666;
+  cursor: not-allowed;
+}
