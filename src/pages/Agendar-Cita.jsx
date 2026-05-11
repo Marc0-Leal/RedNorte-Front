@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Container, Row, Col, Form, Button, Alert } from 'react-bootstrap';
+import { useNavigate } from "react-router-dom";
 import '../../src/styles/pages/Agendar-Cita.css';
 
 function Agendar() {
+  const navigate = useNavigate();
   const { register, handleSubmit, formState: { errors } } = useForm();
   const [agendada, setAgendada] = useState(false);
 
@@ -11,6 +13,12 @@ function Agendar() {
     console.log(data);
     setAgendada(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    setTimeout(() => {
+
+    navigate("/tus-citas");
+
+    }, 2000);
   };
 
   return (

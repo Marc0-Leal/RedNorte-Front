@@ -1,8 +1,16 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebase";
 
+import { doc, setDoc } from "firebase/firestore";
+import { db } from "../firebase";
+
 export default function CreateUser() {
+  const navigate = useNavigate();
+  const [rut, setRut] = useState("");
+  const [rol, setRol] = useState("usuario");
   const [nombre, setNombre] = useState("");
   const [apellido, setApellido] = useState("");
   const [email, setEmail] = useState("");
@@ -19,7 +27,18 @@ export default function CreateUser() {
         email,
         password
       );
+      await setDoc(doc(db, "usuarios", userCredential.user.uid), {
+        nombre,
+        apellido,
+        rut,
+        email,
+        rol,
+      });
+
       setSuccess("Usuario creado con éxito: " + userCredential.user.email);
+      setTimeout(() => {
+      navigate("/");
+      }, 2000);
     } catch (error) {
       if (error.code === "auth/weak-password") {
         setError("La contraseña debe tener al menos 6 caracteres.");
@@ -31,7 +50,9 @@ export default function CreateUser() {
         setError(error.message);
       }
     }
+
   };
+
 
   return (
     <div style={{
@@ -60,6 +81,14 @@ export default function CreateUser() {
         }}>
           Crear usuario
         </h2>
+
+        <input
+          type="text"
+          placeholder="RUT"
+          value={rut}
+          onChange={(e) => setRut(e.target.value)}
+          style={inputStyle}
+        />
 
         <input
           type="text"
@@ -93,6 +122,14 @@ export default function CreateUser() {
           style={inputStyle}
         />
 
+        <select
+          value={rol}
+          onChange={(e) => setRol(e.target.value)}
+          style={inputStyle}
+        >
+          <option value="usuario">Usuario</option>
+          <option value="admin">Administrador</option>
+        </select>
         {error && (
           <p style={{
             margin: 0,
