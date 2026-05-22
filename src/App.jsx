@@ -4,6 +4,7 @@ import Home from './pages/Home'
 import CreateUser from './pages/CreateUser'
 import LogIn from './pages/LogIn'
 import AgendarCita from './pages/Agendar-Cita'
+import Admin from "./pages/Admin";
 
 import TusCitas from './pages/Citas'
 
@@ -18,6 +19,7 @@ function App() {
        <Route path="/iniciar-sesion" element={<LogIn />} />
        <Route path="/agendar-cita" element={<AgendarCita />} />
        <Route path="/tus-citas" element={<TusCitas />} />
+       <Route path="/admin" element={<Admin />} />
      </Routes>
    </>
  );

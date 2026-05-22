@@ -1,8 +1,16 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebase";
 
+import { doc, setDoc } from "firebase/firestore";
+import { db } from "../firebase";
+
 export default function CreateUser() {
+  const navigate = useNavigate();
+  const [rut, setRut] = useState("");
+  const [rol, setRol] = useState("usuario");
   const [nombre, setNombre] = useState("");
   const [apellido, setApellido] = useState("");
   const [email, setEmail] = useState("");
@@ -88,6 +96,7 @@ const handleCreateUser = async () => {
   }
 };
 
+
   return (
     <div style={{
       minHeight: "100vh",
@@ -115,6 +124,14 @@ const handleCreateUser = async () => {
         }}>
           Crear usuario
         </h2>
+
+        <input
+          type="text"
+          placeholder="RUT"
+          value={rut}
+          onChange={(e) => setRut(e.target.value)}
+          style={inputStyle}
+        />
 
         <input
           type="text"
@@ -148,6 +165,14 @@ const handleCreateUser = async () => {
           style={inputStyle}
         />
 
+        <select
+          value={rol}
+          onChange={(e) => setRol(e.target.value)}
+          style={inputStyle}
+        >
+          <option value="usuario">Usuario</option>
+          <option value="admin">Administrador</option>
+        </select>
         {error && (
           <p style={{
             margin: 0,
