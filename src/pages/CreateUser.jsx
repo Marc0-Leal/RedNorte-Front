@@ -10,28 +10,83 @@ export default function CreateUser() {
   const [error, setError] = useState("");      
   const [success, setSuccess] = useState("");  
 
-  const handleCreateUser = async () => {
-    setError("");
-    setSuccess("");
-    try {
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-      setSuccess("Usuario creado con éxito: " + userCredential.user.email);
-    } catch (error) {
-      if (error.code === "auth/weak-password") {
-        setError("La contraseña debe tener al menos 6 caracteres.");
-      } else if (error.code === "auth/email-already-in-use") {
-        setError("Este correo ya está registrado.");
-      } else if (error.code === "auth/invalid-email") {
-        setError("El correo no es válido.");
-      } else {
-        setError(error.message);
-      }
+  const validarRut = (rut) => {
+  return /^[0-9]{7,8}-[0-9kK]{1}$/.test(rut);
+};
+
+const validarEmail = (email) => {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+};
+
+const handleCreateUser = async () => {
+  setError("");
+  setSuccess("");
+
+  // VALIDACIONES
+
+  if (!rut || !nombre || !apellido || !email || !password) {
+    setError("Todos los campos son obligatorios.");
+    return;
+  }
+
+  if (!validarRut(rut)) {
+    setError("El RUT no tiene un formato válido.");
+    return;
+  }
+
+  if (nombre.length < 2) {
+    setError("El nombre debe tener al menos 2 caracteres.");
+    return;
+  }
+
+  if (apellido.length < 2) {
+    setError("El apellido debe tener al menos 2 caracteres.");
+    return;
+  }
+
+  if (!validarEmail(email)) {
+    setError("El correo no es válido.");
+    return;
+  }
+
+  if (password.length < 6) {
+    setError("La contraseña debe tener al menos 6 caracteres.");
+    return;
+  }
+
+  try {
+    const userCredential = await createUserWithEmailAndPassword(
+      auth,
+      email,
+      password
+    );
+
+    await setDoc(doc(db, "usuarios", userCredential.user.uid), {
+      nombre,
+      apellido,
+      rut,
+      email,
+      rol,
+    });
+
+    setSuccess("Usuario creado con éxito: " + userCredential.user.email);
+
+    setTimeout(() => {
+      navigate("/");
+    }, 2000);
+
+  } catch (error) {
+    if (error.code === "auth/weak-password") {
+      setError("La contraseña debe tener al menos 6 caracteres.");
+    } else if (error.code === "auth/email-already-in-use") {
+      setError("Este correo ya está registrado.");
+    } else if (error.code === "auth/invalid-email") {
+      setError("El correo no es válido.");
+    } else {
+      setError(error.message);
     }
-  };
+  }
+};
 
   return (
     <div style={{
