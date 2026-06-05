@@ -178,32 +178,48 @@ function Agendar() {
           <div className="schedules-card schedules-card-dark">
             <h2 className="schedules-section-title schedules-section-title-light">Datos Médicos</h2>
  
-            <Row className="mb-3 align-items-center">
-              <Col xs={2}>
-                <Form.Label className="schedules-label schedules-label-light">Medico</Form.Label>
-              </Col>
-              <Col xs={4}>
-                <Form.Control
-                  className="schedules-input"
-                  type="text"
-                  isInvalid={!!errors.medico}
-                  {...register('medico', { required: 'Campo requerido' })}
-                />
-                <Form.Control.Feedback type="invalid">{errors.medico?.message}</Form.Control.Feedback>
-              </Col>
-              <Col xs={2}>
-                <Form.Label className="schedules-label schedules-label-light">Especialidad</Form.Label>
-              </Col>
-              <Col xs={4}>
-                <Form.Control
-                  className="schedules-input"
-                  type="text"
-                  isInvalid={!!errors.especialidad}
-                  {...register('especialidad', { required: 'Campo requerido' })}
-                />
-                <Form.Control.Feedback type="invalid">{errors.especialidad?.message}</Form.Control.Feedback>
-              </Col>
-            </Row>
+<Row className="mb-3 align-items-center">
+  <Col xs={2}>
+    <Form.Label className="schedules-label schedules-label-light">
+      Médico
+    </Form.Label>
+  </Col>
+
+  <Col xs={4}>
+    <Form.Select
+      className="schedules-input"
+      isInvalid={!!errors.medico}
+      {...register('medico', { required: 'Seleccione un médico' })}
+    >
+      <option value="">Seleccione un médico</option>
+      <option value="Dr. Juan Pérez">Dr. Juan Pérez</option>
+      <option value="Dra. María González">Dra. María González</option>
+      <option value="Dr. Pedro Soto">Dr. Pedro Soto</option>
+    </Form.Select>
+
+    <Form.Control.Feedback type="invalid">
+      {errors.medico?.message}
+    </Form.Control.Feedback>
+  </Col>
+
+  <Col xs={2}>
+    <Form.Label className="schedules-label schedules-label-light">
+      Especialidad
+    </Form.Label>
+  </Col>
+
+  <Col xs={4}>
+    <Form.Control
+      className="schedules-input"
+      type="text"
+      isInvalid={!!errors.especialidad}
+      {...register('especialidad', { required: 'Campo requerido' })}
+    />
+    <Form.Control.Feedback type="invalid">
+      {errors.especialidad?.message}
+    </Form.Control.Feedback>
+  </Col>
+</Row>
  
             <Row className="align-items-center">
               <Col xs={2}>
