@@ -15,8 +15,28 @@ export default function CreateUser() {
   const [apellido, setApellido] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");      
-  const [success, setSuccess] = useState("");  
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({}); 
+
+ 
+  const validate = () => {
+    const newErrors = {};
+    if (!rut.trim())      newErrors.rut      = 'Campo requerido';
+    if (!nombre.trim())   newErrors.nombre   = 'Campo requerido';
+    if (!apellido.trim()) newErrors.apellido = 'Campo requerido';
+    if (!email.trim())    newErrors.email    = 'Campo requerido';
+    if (!password.trim()) newErrors.password = 'Campo requerido';
+    setFieldErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+ 
+  const clearFieldError = (field) => {
+    if (fieldErrors[field]) {
+      setFieldErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
 
   const validarRut = (rut) => {
   return /^[0-9]{7,8}-[0-9kK]{1}$/.test(rut);
@@ -30,13 +50,9 @@ const handleCreateUser = async () => {
   setError("");
   setSuccess("");
 
-  // VALIDACIONES
+  if (!validate()) return;
 
-  if (!rut || !nombre || !apellido || !email || !password) {
-    setError("Todos los campos son obligatorios.");
-    return;
-  }
-
+  // Validaciones extra
   if (!validarRut(rut)) {
     setError("El RUT no tiene un formato válido.");
     return;
@@ -63,12 +79,7 @@ const handleCreateUser = async () => {
   }
 
   try {
-    const userCredential = await createUserWithEmailAndPassword(
-      auth,
-      email,
-      password
-    );
-
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     await setDoc(doc(db, "usuarios", userCredential.user.uid), {
       nombre,
       apellido,
@@ -78,7 +89,6 @@ const handleCreateUser = async () => {
     });
 
     setSuccess("Usuario creado con éxito: " + userCredential.user.email);
-
     setTimeout(() => {
       navigate("/");
     }, 2000);
@@ -95,7 +105,6 @@ const handleCreateUser = async () => {
     }
   }
 };
-
 
   return (
     <div style={{
@@ -125,46 +134,67 @@ const handleCreateUser = async () => {
           Crear usuario
         </h2>
 
-        <input
-          type="text"
-          placeholder="RUT"
-          value={rut}
-          onChange={(e) => setRut(e.target.value)}
-          style={inputStyle}
-        />
+        {/* RUT */}
+        <div style={wrapperStyle}>
+          <input
+            type="text"
+            placeholder="RUT"
+            value={rut}
+            onChange={(e) => { setRut(e.target.value); clearFieldError('rut'); }}
+            style={{ ...inputStyle, ...(fieldErrors.rut ? errorBorderStyle : {}) }}
+          />
+          {fieldErrors.rut && <span style={errorTextStyle}>{fieldErrors.rut}</span>}
+        </div>
 
-        <input
-          type="text"
-          placeholder="Nombre"
-          value={nombre}
-          onChange={(e) => setNombre(e.target.value)}
-          style={inputStyle}
-        />
+        {/* NOMBRE */}
+        <div style={wrapperStyle}>
+          <input
+            type="text"
+            placeholder="Nombre"
+            value={nombre}
+            onChange={(e) => { setNombre(e.target.value); clearFieldError('nombre'); }}
+            style={{ ...inputStyle, ...(fieldErrors.nombre ? errorBorderStyle : {}) }}
+          />
+          {fieldErrors.nombre && <span style={errorTextStyle}>{fieldErrors.nombre}</span>}
+        </div>
 
-        <input
-          type="text"
-          placeholder="Apellido"
-          value={apellido}
-          onChange={(e) => setApellido(e.target.value)}
-          style={inputStyle}
-        />
+        {/* APELLIDO */}
+        <div style={wrapperStyle}>
+          <input
+            type="text"
+            placeholder="Apellido"
+            value={apellido}
+            onChange={(e) => { setApellido(e.target.value); clearFieldError('apellido'); }}
+            style={{ ...inputStyle, ...(fieldErrors.apellido ? errorBorderStyle : {}) }}
+          />
+          {fieldErrors.apellido && <span style={errorTextStyle}>{fieldErrors.apellido}</span>}
+        </div>
 
-        <input
-          type="email"
-          placeholder="Correo"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={inputStyle}
-        />
+        {/* EMAIL */}
+        <div style={wrapperStyle}>
+          <input
+            type="email"
+            placeholder="Correo"
+            value={email}
+            onChange={(e) => { setEmail(e.target.value); clearFieldError('email'); }}
+            style={{ ...inputStyle, ...(fieldErrors.email ? errorBorderStyle : {}) }}
+          />
+          {fieldErrors.email && <span style={errorTextStyle}>{fieldErrors.email}</span>}
+        </div>
 
-        <input
-          type="password"
-          placeholder="Contraseña (mínimo 6 caracteres)"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={inputStyle}
-        />
+        {/* CONTRASEÑA */}
+        <div style={wrapperStyle}>
+          <input
+            type="password"
+            placeholder="Contraseña (mínimo 6 caracteres)"
+            value={password}
+            onChange={(e) => { setPassword(e.target.value); clearFieldError('password'); }}
+            style={{ ...inputStyle, ...(fieldErrors.password ? errorBorderStyle : {}) }}
+          />
+          {fieldErrors.password && <span style={errorTextStyle}>{fieldErrors.password}</span>}
+        </div>
 
+        {/* ROL */}
         <select
           value={rol}
           onChange={(e) => setRol(e.target.value)}
@@ -173,6 +203,8 @@ const handleCreateUser = async () => {
           <option value="usuario">Usuario</option>
           <option value="admin">Administrador</option>
         </select>
+
+        {/* Error Firebase */}
         {error && (
           <p style={{
             margin: 0,
@@ -187,6 +219,7 @@ const handleCreateUser = async () => {
           </p>
         )}
 
+        {/* Éxito */}
         {success && (
           <p style={{
             margin: 0,
@@ -222,6 +255,12 @@ const handleCreateUser = async () => {
   );
 }
 
+const wrapperStyle = {
+  display: "flex",
+  flexDirection: "column",
+  width: "100%",
+};
+
 const inputStyle = {
   padding: "10px 14px",
   borderRadius: "8px",
@@ -231,4 +270,15 @@ const inputStyle = {
   width: "100%",
   boxSizing: "border-box",
   color: "#374151",
+};
+
+const errorBorderStyle = {
+  border: "1.5px solid #e53e3e",
+};
+
+const errorTextStyle = {
+  color: "#e53e3e",
+  fontSize: "12px",
+  marginTop: "4px",
+  marginLeft: "2px",
 };

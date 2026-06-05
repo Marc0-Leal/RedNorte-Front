@@ -7,31 +7,38 @@ function Input({
   onChange,
   placeholder = '',
   className = '',
+  error = '',
   ...props
 }) {
   if (type === 'textarea') {
     return (
-      <textarea
-        name={name}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        className={className}
-        {...props}
-      />
+      <div className="input-wrapper">
+        <textarea
+          name={name}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          className={`${className} ${error ? 'input-error' : ''}`}
+          {...props}
+        />
+        {error && <span className="error-message">{error}</span>}
+      </div>
     );
   }
 
   return (
-    <input
-      type={type}
-      name={name}
-      value={value}
-      onChange={onChange}
-      placeholder={placeholder}
-      className={className}
-      {...props}
-    />
+    <div className="input-wrapper">
+      <input
+        type={type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        className={`${className} ${error ? 'input-error' : ''}`}
+        {...props}
+      />
+      {error && <span className="error-message">{error}</span>}
+    </div>
   );
 }
 

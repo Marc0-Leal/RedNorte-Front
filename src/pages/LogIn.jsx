@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { Container, Navbar } from 'react-bootstrap';
+import { Container } from 'react-bootstrap';
 
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth, db } from "../firebase";
-
 import { collection, getDocs } from "firebase/firestore";
 
 import Cookies from "js-cookie";
@@ -18,65 +17,58 @@ function LogIn() {
 
     const [rut, setRut] = useState('');
     const [password, setPassword] = useState('');
+    const [errors, setErrors] = useState({});  
 
     const navigate = useNavigate();
 
+    // 👇 Validación de campos
+    const validate = () => {
+        const newErrors = {};
+        if (!rut.trim())      newErrors.rut      = 'Campo requerido';
+        if (!password.trim()) newErrors.password = 'Campo requerido';
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
     const handleLogIn = async () => {
 
-        if (!rut || !password) {
-            alert('Complete los campos');
-            return;
-        }
+        if (!validate()) return; 
 
         try {
-
-            // Buscar usuario por RUT en Firestore
             const querySnapshot = await getDocs(collection(db, "usuarios"));
 
             let usuarioEncontrado = null;
 
             querySnapshot.forEach((doc) => {
-
                 const data = doc.data();
-
                 if (data.rut === rut) {
                     usuarioEncontrado = data;
                 }
             });
 
-            // Si no existe
             if (!usuarioEncontrado) {
                 alert("Usuario no encontrado");
                 return;
             }
 
-            // Login Firebase usando email encontrado
             await signInWithEmailAndPassword(
                 auth,
                 usuarioEncontrado.email,
                 password
             );
 
-            // Guardar rol
             Cookies.set("rol", usuarioEncontrado.rol);
 
-            // ADMIN
             if (usuarioEncontrado.rol === "admin") {
-
                 alert("Bienvenido administrador");
-
                 navigate("/admin");
-
                 return;
             }
 
-            // USUARIO NORMAL
             alert("Inicio de sesión");
-
             navigate("/");
 
         } catch (error) {
-
             alert("Credenciales incorrectas");
         }
     };
@@ -85,11 +77,8 @@ function LogIn() {
         <Container
             fluid
             className="d-flex justify-content-center align-items-center vh-100"
-            style={{
-                backgroundColor: '#ffffff',
-            }}
+            style={{ backgroundColor: '#ffffff' }}
         >
-
             <div
                 className="p-5 shadow"
                 style={{
@@ -99,36 +88,32 @@ function LogIn() {
                     borderRadius: '20px',
                 }}
             >
-
                 <div className="text-center mb-4">
-
                     <Text
                         variant="h1"
-                        style={{
-                            color: '#bee5d69',
-                            fontWeight: 'bold',
-                        }}
+                        style={{ color: '#ee5d69', fontWeight: 'bold' }}
                     >
                         Hospital Red Norte
                     </Text>
-
                     <Text
                         variant="p"
-                        style={{
-                            color: '#ee5d69',
-                        }}
+                        style={{ color: '#ee5d69' }}
                     >
                         Inicio de Sesión
                     </Text>
-
                 </div>
 
+                {/*  */}
                 <Input
                     type="text"
                     label="RUT"
                     placeholder="Ingrese su rut"
                     value={rut}
-                    onChange={(e) => setRut(e.target.value)}
+                    onChange={(e) => {
+                        setRut(e.target.value);
+                        if (errors.rut) setErrors(prev => ({ ...prev, rut: '' }));
+                    }}
+                    error={errors.rut}
                 />
 
                 <Input
@@ -136,11 +121,14 @@ function LogIn() {
                     label="Contraseña"
                     placeholder="Ingrese su contraseña"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => {
+                        setPassword(e.target.value);
+                        if (errors.password) setErrors(prev => ({ ...prev, password: '' }));
+                    }}
+                    error={errors.password}
                 />
 
                 <div className="mt-4 d-flex justify-content-center">
-
                     <Button
                         onClick={handleLogIn}
                         style={{
@@ -151,11 +139,9 @@ function LogIn() {
                     >
                         Ingresar
                     </Button>
-
                 </div>
 
             </div>
-
         </Container>
     );
 }
