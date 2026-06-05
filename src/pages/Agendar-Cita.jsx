@@ -34,8 +34,8 @@ function Agendar() {
 
       {/* Hero header */}
       <div className="schedules-hero">
-        <h1 className="schedules-hero-title">Agendar Cita</h1>
-        <p className="schedules-hero-sub">Completa el formulario para reservar tu atención médica</p>
+        <h1 className="schedules-hero-title">"RedNorte"Agendar Cita</h1>
+        <p className="schedules-hero-sub">Completa el formulario para reservar tu atención médica no se te olvide revisar tus datos antes de confirmar.</p>
       </div>
 
       <Container className="schedules-container">
