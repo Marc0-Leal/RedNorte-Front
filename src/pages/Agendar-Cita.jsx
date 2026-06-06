@@ -9,14 +9,39 @@ function Agendar() {
   const { register, handleSubmit, formState: { errors } } = useForm();
   const [agendada, setAgendada] = useState(false);
 
-  const onSubmit = (data) => {
-    console.log(data);
-    setAgendada(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    setTimeout(() => {
-      navigate("/tus-citas");
-    }, 2000);
+const onSubmit = async (data) => {
+  const body = {
+    fecha: new Date(data.fecha).toISOString(),
+    hora: 0,
+    estado: "Activa",
+    medico: { id: 1 },
+    cliente: { id: 2 },
+    pago: {
+      monto: 0,
+      fecha_pago: new Date().toISOString(),
+      metodo_pago: "efectivo",
+      estado: "pendiente"
+    },
+    listaEspera: null
   };
+
+  try {
+    const res = await fetch("https://rednorte-gestion-osku.onrender.com/api/citaMedica", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+
+    if (!res.ok) throw new Error("Error al agendar");
+
+    setAgendada(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    setTimeout(() => navigate("/tus-citas"), 2000);
+  } catch (err) {
+    console.error(err);
+    alert("Error al agendar la cita");
+  }
+};
 
   const blockNegativeKeys = (e) => {
     if (e.key === '-' || e.key === 'e' || e.key === '+') {
@@ -216,46 +241,6 @@ function Agendar() {
                   {...register('centroMedico', { required: 'Campo requerido' })}
                 />
                 <Form.Control.Feedback type="invalid">{errors.centroMedico?.message}</Form.Control.Feedback>
-              </Col>
-            </Row>
-          </div>
-
-          {/* Sección precio */}
-          <div className="schedules-card schedules-price-row">
-            <Row className="justify-content-end align-items-center">
-              <Col xs="auto">
-                <Form.Label className="schedules-label mb-0">Precio</Form.Label>
-              </Col>
-
-              {/* 👇 PRECIO - corregido */}
-              <Col xs={3}>
-                <Form.Control
-                  className="schedules-input"
-                  type="number"
-                  min={0}
-                  placeholder="0"
-                  onKeyDown={blockNegativeKeys}
-                  onInput={forcePositive}
-                  isInvalid={!!errors.precio}
-                  {...register('precio', {
-                    min: { value: 0, message: 'El precio no puede ser negativo' }
-                  })}
-                />
-                <Form.Control.Feedback type="invalid">{errors.precio?.message}</Form.Control.Feedback>
-              </Col>
-
-              <Col xs="auto">
-                <Form.Label className="schedules-label mb-0">Total:</Form.Label>
-              </Col>
-              <Col xs={3}>
-                <Form.Control
-                  className="schedules-input"
-                  type="number"
-                  min={0}
-                  placeholder="0"
-                  readOnly
-                  {...register('total')}
-                />
               </Col>
             </Row>
           </div>

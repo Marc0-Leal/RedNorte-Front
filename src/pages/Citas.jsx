@@ -1,43 +1,35 @@
 import { useEffect, useState } from 'react';
 import '../styles/pages/Citas.css';
- 
-{/* Funcion para pasar las fechas de calendario a String*/ }
+
 function fmtFecha(f) {
   if (!f) return '—';
-  const [y, m, d] = f.split('-');
+  const date = new Date(f);
   const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-  return `${parseInt(d)} ${meses[parseInt(m) - 1]} ${y}`;
+  return `${date.getDate()} ${meses[date.getMonth()]} ${date.getFullYear()}`;
 }
-{/* Funcion para pasar el precio a String*/ }
-function fmtPeso(v) {
-  const n = Number(v);
-  if (isNaN(n)) return '—';
-  return '$' + n.toString();
-}
- 
+
 export default function TusCitas() {
   const [citas, setCitas] = useState([]);
   const [openId, setOpenId] = useState(null);
- 
+
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem("citas")) || [];
-    setCitas(stored);
+    fetch("https://rednorte-gestion-osku.onrender.com/api/citaMedica")
+      .then(res => res.json())
+      .then(data => setCitas(data))
+      .catch(() => setCitas([]));
   }, []);
- 
+
   const cancelarCita = (id) => {
     const updated = citas.map((cita) =>
-      cita.id === id
-        ? { ...cita, estado: 'Expirada', activa: false }
-        : cita
+      cita.id === id ? { ...cita, estado: 'Expirada' } : cita
     );
     setCitas(updated);
-    localStorage.setItem("citas", JSON.stringify(updated));
   };
- 
+
   const toggleOpen = (id) => {
     setOpenId((prev) => (prev === id ? null : id));
   };
- 
+
   return (
     <div className="pagina">
       <div className="contenedor">
@@ -48,81 +40,71 @@ export default function TusCitas() {
         ) : (
           citas.map((cita) => {
             const isOpen = openId === cita.id;
+            const activa = cita.estado === 'Activa';
 
             return (
-              <div
-                className={`card ${isOpen ? 'card--open' : ''}`}
-                key={cita.id}
-              >
-                
+              <div className={`card ${isOpen ? 'card--open' : ''}`} key={cita.id}>
                 <div
-                  className="card-summary" onClick={() => toggleOpen(cita.id)} role="button" aria-expanded={isOpen} tabIndex={0}  onKeyDown={(e) => e.key === 'Enter' && toggleOpen(cita.id)}>
+                  className="card-summary"
+                  onClick={() => toggleOpen(cita.id)}
+                  role="button"
+                  aria-expanded={isOpen}
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === 'Enter' && toggleOpen(cita.id)}
+                >
                   <div className="col fecha">{fmtFecha(cita.fecha)}</div>
 
-                  <div className={`col estado ${cita.activa ? 'activa' : 'expirada'}`}>
+                  <div className={`col estado ${activa ? 'activa' : 'expirada'}`}>
                     {cita.estado}
                   </div>
 
                   <div className="col acciones" onClick={(e) => e.stopPropagation()}>
-                    <button className={`btn ${cita.activa ? 'btn-verde' : 'btn-deshabilitado'}`} disabled={!cita.activa}> Reagendar </button>
-
-                    <button className={`btn ${cita.activa ? 'btn-rojo' : 'btn-deshabilitado'}`} disabled={!cita.activa} onClick={() => cancelarCita(cita.id)}> Cancelar </button>
+                    <button className={`btn ${activa ? 'btn-verde' : 'btn-deshabilitado'}`} disabled={!activa}>Reagendar</button>
+                    <button className={`btn ${activa ? 'btn-rojo' : 'btn-deshabilitado'}`} disabled={!activa} onClick={() => cancelarCita(cita.id)}>Cancelar</button>
                   </div>
- 
+
                   <span className={`chevron ${isOpen ? 'chevron--up' : ''}`}>▾</span>
                 </div>
- 
-                {/*Datos de la cita que se expande */}
+
                 {isOpen && (
                   <div className="card-detail">
                     <div className="detail-section-title">Datos del paciente</div>
                     <div className="detail-grid">
                       <div className="detail-item">
                         <span className="detail-label">Paciente</span>
-                        <span className="detail-value">{cita.paciente || '—'}</span>
+                        <span className="detail-value">{cita.cliente ? `${cita.cliente.nombre} ${cita.cliente.apellido}` : '—'}</span>
                       </div>
                       <div className="detail-item">
                         <span className="detail-label">RUT</span>
-                        <span className="detail-value">{cita.rut || '—'}</span>
+                        <span className="detail-value">{cita.cliente?.rut || '—'}</span>
                       </div>
                       <div className="detail-item">
                         <span className="detail-label">Teléfono</span>
-                        <span className="detail-value">{cita.telefono || '—'}</span>
+                        <span className="detail-value">{cita.cliente?.telefono || '—'}</span>
                       </div>
                       <div className="detail-item">
                         <span className="detail-label">Dirección</span>
-                        <span className="detail-value">{cita.direccion || '—'}</span>
+                        <span className="detail-value">{cita.cliente?.direccion || '—'}</span>
                       </div>
                       <div className="detail-item detail-item--full">
                         <span className="detail-label">Síntomas</span>
-                        <span className="detail-value">{cita.sintomas || 'Sin síntomas registrados'}</span>
+                        <span className="detail-value">Sin síntomas registrados</span>
                       </div>
                     </div>
- 
+
                     <div className="detail-section-title">Datos médicos</div>
                     <div className="detail-grid">
                       <div className="detail-item">
                         <span className="detail-label">Médico</span>
-                        <span className="detail-value">{cita.medico || '—'}</span>
+                        <span className="detail-value">{cita.medico ? `${cita.medico.nombre} ${cita.medico.apellido}` : '—'}</span>
                       </div>
                       <div className="detail-item">
                         <span className="detail-label">Especialidad</span>
-                        <span className="detail-value">{cita.especialidad || '—'}</span>
+                        <span className="detail-value">{cita.medico?.especialidad || '—'}</span>
                       </div>
                       <div className="detail-item detail-item--full">
                         <span className="detail-label">Centro médico</span>
-                        <span className="detail-value">{cita.centroMedico || '—'}</span>
-                      </div>
-                    </div>
- 
-                    <div className="detail-grid" style={{ marginTop: '10px' }}>
-                      <div className="detail-item">
-                        <span className="detail-label">Precio</span>
-                        <span className="detail-value">{fmtPeso(cita.precio)}</span>
-                      </div>
-                      <div className="detail-item">
-                        <span className="detail-label">Total</span>
-                        <span className="detail-value">{fmtPeso(cita.total)}</span>
+                        <span className="detail-value">—</span>
                       </div>
                     </div>
                   </div>
