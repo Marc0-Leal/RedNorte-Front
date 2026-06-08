@@ -6,7 +6,7 @@ const ListaEsperaService = {
   create: async ({ fecha_solitud, prioridad, hospital }) => {
     try {
       const body = {
-        fecha_solitud: fecha_solitud + "T12:00:00", 
+        fecha_solitud, 
         prioridad,
         hospital,
       };

@@ -11,7 +11,7 @@ const CitaService = {
   create: async ({ fecha, hora, estado, medico, cliente, pago, listaEspera }) => {
     try {
       const body = {
-        fecha: fecha + "T12:00:00",
+        fecha,
         hora,
         estado,
         medico,
