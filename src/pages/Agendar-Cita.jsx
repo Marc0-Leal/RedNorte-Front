@@ -1,47 +1,83 @@
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useState, useEffect } from 'react';
 import { Container, Row, Col, Form, Button, Alert } from 'react-bootstrap';
 import { useNavigate } from "react-router-dom";
+import CitaService from '../services/CitaService';
+import ListaEsperaService from '../services/ListaEsperaService';
+import MedicoService from '../services/MedicoService';
+import HospitalService from '../services/HospitalService';
 import '../../src/styles/pages/Agendar-Cita.css';
 
 function Agendar() {
   const navigate = useNavigate();
-  const { register, handleSubmit, formState: { errors } } = useForm();
+  const [formData, setFormData] = useState({
+    numeroCita: '',
+    paciente: '',
+    rut: '',
+    sintomas: '',
+    fecha: '',
+    direccion: '',
+    telefono: '',
+    medicoId: '',
+    especialidad: '',
+    hospitalId: '',
+  });
+  const [medicos, setMedicos] = useState([]);
+  const [hospitales, setHospitales] = useState([]);
   const [agendada, setAgendada] = useState(false);
 
-const onSubmit = async (data) => {
-  const body = {
-    fecha: new Date(data.fecha).toISOString(),
-    hora: 0,
-    estado: "Activa",
-    medico: { id: 1 },
-    cliente: { id: 2 },
-    pago: {
-      monto: 0,
-      fecha_pago: new Date().toISOString(),
-      metodo_pago: "efectivo",
-      estado: "pendiente"
-    },
-    listaEspera: null
+  useEffect(() => {
+    MedicoService.getAll().then(setMedicos).catch(console.error);
+    HospitalService.getAll().then(setHospitales).catch(console.error);
+  }, []);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    // When medico changes, auto-fill especialidad
+    if (name === 'medicoId') {
+      const selected = medicos.find(m => m.id === Number(value));
+      setFormData((prev) => ({
+        ...prev,
+        medicoId: value,
+        especialidad: selected ? selected.especialidad : '',
+      }));
+      return;
+    }
+
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  try {
-    const res = await fetch("https://rednorte-gestion-osku.onrender.com/api/citaMedica", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body)
-    });
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const listaEspera = await ListaEsperaService.create({
+        fecha_solitud: formData.fecha,
+        prioridad: "Normal",
+        hospital: { id: Number(formData.hospitalId) },
+      });
 
-    if (!res.ok) throw new Error("Error al agendar");
+      await CitaService.create({
+        fecha: formData.fecha,
+        hora: 0,
+        estado: "Activa",
+        medico: { id: Number(formData.medicoId) },
+        cliente: { id: Number(formData.paciente) },
+        pago: {
+          monto: 0,
+          fecha_pago: new Date().toISOString(),
+          metodo_pago: "efectivo",
+          estado: "pendiente"
+        },
+        listaEspera: { id: listaEspera.id },
+      });
 
-    setAgendada(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-    setTimeout(() => navigate("/tus-citas"), 2000);
-  } catch (err) {
-    console.error(err);
-    alert("Error al agendar la cita");
-  }
-};
+      setAgendada(true);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setTimeout(() => navigate('/tus-citas'), 2000);
+    } catch (err) {
+      alert('Error al agendar la cita');
+    }
+  };
 
   const blockNegativeKeys = (e) => {
     if (e.key === '-' || e.key === 'e' || e.key === '+') {
@@ -49,7 +85,6 @@ const onSubmit = async (data) => {
     }
   };
 
- 
   const forcePositive = (e) => {
     if (e.target.value < 0) e.target.value = 0;
   };
@@ -71,7 +106,7 @@ const onSubmit = async (data) => {
       </div>
 
       <Container className="schedules-container">
-        <Form noValidate onSubmit={handleSubmit(onSubmit)}>
+        <Form noValidate onSubmit={handleSubmit}>
 
           {/* Sección datos del paciente */}
           <div className="schedules-card">
@@ -80,7 +115,6 @@ const onSubmit = async (data) => {
             <Row>
               <Col md={6}>
 
-                {/* */}
                 <Row className="mb-3 align-items-center">
                   <Col xs={4}>
                     <Form.Label className="schedules-label">Numero de Cita</Form.Label>
@@ -89,16 +123,13 @@ const onSubmit = async (data) => {
                     <Form.Control
                       className="schedules-input"
                       type="number"
-                      defaultValue={0}
+                      name="numeroCita"
                       min={0}
+                      value={formData.numeroCita}
                       onKeyDown={blockNegativeKeys}
                       onInput={forcePositive}
-                      isInvalid={!!errors.numeroCita}
-                      {...register('numeroCita', {
-                        min: { value: 0, message: 'No puede ser negativo' }
-                      })}
+                      onChange={handleChange}
                     />
-                    <Form.Control.Feedback type="invalid">{errors.numeroCita?.message}</Form.Control.Feedback>
                   </Col>
                 </Row>
 
@@ -110,10 +141,11 @@ const onSubmit = async (data) => {
                     <Form.Control
                       className="schedules-input"
                       type="text"
-                      isInvalid={!!errors.paciente}
-                      {...register('paciente', { required: 'Campo requerido' })}
+                      name="paciente"
+                      value={formData.paciente}
+                      onChange={handleChange}
+                      required
                     />
-                    <Form.Control.Feedback type="invalid">{errors.paciente?.message}</Form.Control.Feedback>
                   </Col>
                 </Row>
 
@@ -125,11 +157,12 @@ const onSubmit = async (data) => {
                     <Form.Control
                       className="schedules-input"
                       type="text"
+                      name="rut"
                       placeholder="12345678-9"
-                      isInvalid={!!errors.rut}
-                      {...register('rut', { required: 'Campo requerido' })}
+                      value={formData.rut}
+                      onChange={handleChange}
+                      required
                     />
-                    <Form.Control.Feedback type="invalid">{errors.rut?.message}</Form.Control.Feedback>
                   </Col>
                 </Row>
 
@@ -141,8 +174,10 @@ const onSubmit = async (data) => {
                     <Form.Control
                       className="schedules-input"
                       as="textarea"
+                      name="sintomas"
                       rows={2}
-                      {...register('sintomas')}
+                      value={formData.sintomas}
+                      onChange={handleChange}
                     />
                   </Col>
                 </Row>
@@ -157,10 +192,11 @@ const onSubmit = async (data) => {
                     <Form.Control
                       className="schedules-input"
                       type="date"
-                      isInvalid={!!errors.fecha}
-                      {...register('fecha', { required: 'Campo requerido' })}
+                      name="fecha"
+                      value={formData.fecha}
+                      onChange={handleChange}
+                      required
                     />
-                    <Form.Control.Feedback type="invalid">{errors.fecha?.message}</Form.Control.Feedback>
                   </Col>
                 </Row>
 
@@ -172,10 +208,11 @@ const onSubmit = async (data) => {
                     <Form.Control
                       className="schedules-input"
                       type="text"
-                      isInvalid={!!errors.direccion}
-                      {...register('direccion', { required: 'Campo requerido' })}
+                      name="direccion"
+                      value={formData.direccion}
+                      onChange={handleChange}
+                      required
                     />
-                    <Form.Control.Feedback type="invalid">{errors.direccion?.message}</Form.Control.Feedback>
                   </Col>
                 </Row>
 
@@ -187,11 +224,12 @@ const onSubmit = async (data) => {
                     <Form.Control
                       className="schedules-input"
                       type="tel"
+                      name="telefono"
                       placeholder="+56912345678"
-                      isInvalid={!!errors.telefono}
-                      {...register('telefono', { required: 'Campo requerido' })}
+                      value={formData.telefono}
+                      onChange={handleChange}
+                      required
                     />
-                    <Form.Control.Feedback type="invalid">{errors.telefono?.message}</Form.Control.Feedback>
                   </Col>
                 </Row>
               </Col>
@@ -207,13 +245,20 @@ const onSubmit = async (data) => {
                 <Form.Label className="schedules-label schedules-label-light">Medico</Form.Label>
               </Col>
               <Col xs={4}>
-                <Form.Control
+                <Form.Select
                   className="schedules-input"
-                  type="text"
-                  isInvalid={!!errors.medico}
-                  {...register('medico', { required: 'Campo requerido' })}
-                />
-                <Form.Control.Feedback type="invalid">{errors.medico?.message}</Form.Control.Feedback>
+                  name="medicoId"
+                  value={formData.medicoId}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="">Seleccionar médico...</option>
+                  {medicos.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.nombre} {m.apellido}
+                    </option>
+                  ))}
+                </Form.Select>
               </Col>
               <Col xs={2}>
                 <Form.Label className="schedules-label schedules-label-light">Especialidad</Form.Label>
@@ -222,10 +267,10 @@ const onSubmit = async (data) => {
                 <Form.Control
                   className="schedules-input"
                   type="text"
-                  isInvalid={!!errors.especialidad}
-                  {...register('especialidad', { required: 'Campo requerido' })}
+                  name="especialidad"
+                  value={formData.especialidad}
+                  readOnly
                 />
-                <Form.Control.Feedback type="invalid">{errors.especialidad?.message}</Form.Control.Feedback>
               </Col>
             </Row>
 
@@ -234,13 +279,20 @@ const onSubmit = async (data) => {
                 <Form.Label className="schedules-label schedules-label-light">Centro Medico</Form.Label>
               </Col>
               <Col xs={4}>
-                <Form.Control
+                <Form.Select
                   className="schedules-input"
-                  type="text"
-                  isInvalid={!!errors.centroMedico}
-                  {...register('centroMedico', { required: 'Campo requerido' })}
-                />
-                <Form.Control.Feedback type="invalid">{errors.centroMedico?.message}</Form.Control.Feedback>
+                  name="hospitalId"
+                  value={formData.hospitalId}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="">Seleccionar hospital...</option>
+                  {hospitales.map((h) => (
+                    <option key={h.id} value={h.id}>
+                      {h.nombre}
+                    </option>
+                  ))}
+                </Form.Select>
               </Col>
             </Row>
           </div>
