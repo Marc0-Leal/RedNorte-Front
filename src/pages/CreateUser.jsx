@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-
+import axios from "axios";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebase";
 
@@ -52,7 +52,6 @@ const handleCreateUser = async () => {
 
   if (!validate()) return;
 
-  // Validaciones extra
   if (!validarRut(rut)) {
     setError("El RUT no tiene un formato válido.");
     return;
@@ -79,6 +78,7 @@ const handleCreateUser = async () => {
   }
 
   try {
+    // 1. Create in Firebase
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     await setDoc(doc(db, "usuarios", userCredential.user.uid), {
       nombre,
@@ -86,6 +86,16 @@ const handleCreateUser = async () => {
       rut,
       email,
       rol,
+    });
+
+    // 2. Create Cliente in backend
+    await axios.post("https://rednorte-gestion-osku.onrender.com/api/cliente", {
+      nombre,
+      apellido,
+      rut,
+      telefono: 0,
+      correo: email,
+      direccion: "",
     });
 
     setSuccess("Usuario creado con éxito: " + userCredential.user.email);
