@@ -27,24 +27,21 @@ function Agendar() {
   const [clienteActual, setClienteActual] = useState(null);
   const [loadingCliente, setLoadingCliente] = useState(true);
 
-  // Load medicos and hospitales
   useEffect(() => {
     MedicoService.getAll().then(setMedicos).catch(console.error);
     HospitalService.getAll().then(setHospitales).catch(console.error);
   }, []);
 
-  // Get logged-in user's rut from Firebase and match to cliente
   useEffect(() => {
     const fetchCliente = async () => {
       try {
         const firebaseUser = auth.currentUser;
         if (!firebaseUser) {
           alert('Debes iniciar sesión para agendar una cita');
-          navigate('/ingresar');
+          navigate('/LogIn');
           return;
         }
 
-        // Get rut from Firestore usuarios collection
         const querySnapshot = await getDocs(collection(db, 'usuarios'));
         let rutUsuario = null;
         querySnapshot.forEach((doc) => {
@@ -59,7 +56,6 @@ function Agendar() {
           return;
         }
 
-        // Match rut to cliente in backend
         const cliente = await ClienteService.getByRut(rutUsuario);
         if (!cliente) {
           alert('No se encontró tu perfil de cliente. Contacta al administrador.');
@@ -100,7 +96,6 @@ function Agendar() {
       return;
     }
     try {
-      // 1. Create pago automatically
       const pago = await PagoService.create({
         monto: 0,
         fecha_pago: formData.fecha,
@@ -108,7 +103,6 @@ function Agendar() {
         estado: "pendiente",
       });
 
-      // 2. Fetch full hospital and create listaEspera
       const hospital = await HospitalService.getById(Number(formData.hospitalId));
       const listaEspera = await ListaEsperaService.create({
         fecha_solitud: formData.fecha,
@@ -116,7 +110,6 @@ function Agendar() {
         hospital: hospital,
       });
 
-      // 3. Create citaMedica
       await CitaService.create({
         fecha: formData.fecha,
         hora: 0,
