@@ -58,6 +58,7 @@ function LogIn() {
             );
 
             Cookies.set("rol", usuarioEncontrado.rol);
+            Cookies.set("rut", usuarioEncontrado.rut);
 
             if (usuarioEncontrado.rol === "admin") {
                 alert("Bienvenido administrador");

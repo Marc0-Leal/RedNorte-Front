@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Container, Row, Col, Form, Button, Alert } from 'react-bootstrap';
 import { useNavigate } from "react-router-dom";
-import { auth, db } from '../firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import Cookies from "js-cookie";
 import CitaService from '../services/CitaService';
 import ListaEsperaService from '../services/ListaEsperaService';
 import MedicoService from '../services/MedicoService';
@@ -14,7 +13,6 @@ import '../../src/styles/pages/Agendar-Cita.css';
 function Agendar() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    numeroCita: '',
     sintomas: '',
     fecha: '',
     medicoId: '',
@@ -35,24 +33,10 @@ function Agendar() {
   useEffect(() => {
     const fetchCliente = async () => {
       try {
-        const firebaseUser = auth.currentUser;
-        if (!firebaseUser) {
+        const rutUsuario = Cookies.get("rut");
+        if (!rutUsuario) {
           alert('Debes iniciar sesión para agendar una cita');
           navigate('/LogIn');
-          return;
-        }
-
-        const querySnapshot = await getDocs(collection(db, 'usuarios'));
-        let rutUsuario = null;
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          if (data.email === firebaseUser.email) {
-            rutUsuario = data.rut;
-          }
-        });
-
-        if (!rutUsuario) {
-          alert('No se encontró tu usuario en el sistema');
           return;
         }
 
@@ -328,7 +312,11 @@ function Agendar() {
           {/* Botón */}
           <div className="schedules-btn-wrapper">
             <Button className="schedules-btn-outline" href="/">Cancelar</Button>
-            <Button className="schedules-btn-primary" type="submit" disabled={loadingCliente || !clienteActual}>
+            <Button
+              className="schedules-btn-primary"
+              type="submit"
+              disabled={loadingCliente || !clienteActual}
+            >
               Agendar Cita
             </Button>
           </div>
