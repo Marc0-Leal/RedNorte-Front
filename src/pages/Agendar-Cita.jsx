@@ -82,7 +82,7 @@ function Agendar() {
     try {
       const pago = await PagoService.create({
         monto: 0,
-        fecha_pago: formData.fecha,
+        fecha_pago: formData.fecha,  
         metodo_pago: "efectivo",
         estado: "pendiente",
       });
