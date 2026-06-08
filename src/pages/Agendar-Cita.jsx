@@ -1,22 +1,22 @@
 import { useState, useEffect } from 'react';
 import { Container, Row, Col, Form, Button, Alert } from 'react-bootstrap';
 import { useNavigate } from "react-router-dom";
+import { auth, db } from '../firebase';
+import { collection, getDocs } from 'firebase/firestore';
 import CitaService from '../services/CitaService';
 import ListaEsperaService from '../services/ListaEsperaService';
 import MedicoService from '../services/MedicoService';
 import HospitalService from '../services/HospitalService';
+import ClienteService from '../services/ClienteService';
+import PagoService from '../services/PagoService';
 import '../../src/styles/pages/Agendar-Cita.css';
 
 function Agendar() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     numeroCita: '',
-    paciente: '',
-    rut: '',
     sintomas: '',
     fecha: '',
-    direccion: '',
-    telefono: '',
     medicoId: '',
     especialidad: '',
     hospitalId: '',
@@ -24,16 +24,62 @@ function Agendar() {
   const [medicos, setMedicos] = useState([]);
   const [hospitales, setHospitales] = useState([]);
   const [agendada, setAgendada] = useState(false);
+  const [clienteActual, setClienteActual] = useState(null);
+  const [loadingCliente, setLoadingCliente] = useState(true);
 
+  // Load medicos and hospitales
   useEffect(() => {
     MedicoService.getAll().then(setMedicos).catch(console.error);
     HospitalService.getAll().then(setHospitales).catch(console.error);
   }, []);
 
+  // Get logged-in user's rut from Firebase and match to cliente
+  useEffect(() => {
+    const fetchCliente = async () => {
+      try {
+        const firebaseUser = auth.currentUser;
+        if (!firebaseUser) {
+          alert('Debes iniciar sesión para agendar una cita');
+          navigate('/ingresar');
+          return;
+        }
+
+        // Get rut from Firestore usuarios collection
+        const querySnapshot = await getDocs(collection(db, 'usuarios'));
+        let rutUsuario = null;
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          if (data.email === firebaseUser.email) {
+            rutUsuario = data.rut;
+          }
+        });
+
+        if (!rutUsuario) {
+          alert('No se encontró tu usuario en el sistema');
+          return;
+        }
+
+        // Match rut to cliente in backend
+        const cliente = await ClienteService.getByRut(rutUsuario);
+        if (!cliente) {
+          alert('No se encontró tu perfil de cliente. Contacta al administrador.');
+          return;
+        }
+
+        setClienteActual(cliente);
+      } catch (err) {
+        console.error('Error al obtener cliente:', err);
+      } finally {
+        setLoadingCliente(false);
+      }
+    };
+
+    fetchCliente();
+  }, []);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    // When medico changes, auto-fill especialidad
     if (name === 'medicoId') {
       const selected = medicos.find(m => m.id === Number(value));
       setFormData((prev) => ({
@@ -49,25 +95,35 @@ function Agendar() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!clienteActual) {
+      alert('No se pudo identificar tu perfil de cliente.');
+      return;
+    }
     try {
+      // 1. Create pago automatically
+      const pago = await PagoService.create({
+        monto: 0,
+        fecha_pago: formData.fecha,
+        metodo_pago: "efectivo",
+        estado: "pendiente",
+      });
+
+      // 2. Fetch full hospital and create listaEspera
+      const hospital = await HospitalService.getById(Number(formData.hospitalId));
       const listaEspera = await ListaEsperaService.create({
         fecha_solitud: formData.fecha,
         prioridad: "Normal",
-        hospital: { id: Number(formData.hospitalId) },
+        hospital: hospital,
       });
 
+      // 3. Create citaMedica
       await CitaService.create({
         fecha: formData.fecha,
         hora: 0,
         estado: "Activa",
         medico: { id: Number(formData.medicoId) },
-        cliente: { id: Number(formData.paciente) },
-        pago: {
-          monto: 0,
-          fecha_pago: new Date().toISOString(),
-          metodo_pago: "efectivo",
-          estado: "pendiente"
-        },
+        cliente: { id: clienteActual.id },
+        pago: { id: pago.id },
         listaEspera: { id: listaEspera.id },
       });
 
@@ -75,6 +131,7 @@ function Agendar() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       setTimeout(() => navigate('/tus-citas'), 2000);
     } catch (err) {
+      console.error(err);
       alert('Error al agendar la cita');
     }
   };
@@ -112,128 +169,107 @@ function Agendar() {
           <div className="schedules-card">
             <h2 className="schedules-section-title">Datos del Paciente</h2>
 
-            <Row>
-              <Col md={6}>
+            {loadingCliente ? (
+              <p className="schedules-label">Cargando datos del paciente...</p>
+            ) : clienteActual ? (
+              <Row>
+                <Col md={6}>
+                  <Row className="mb-3 align-items-center">
+                    <Col xs={4}>
+                      <Form.Label className="schedules-label">Paciente</Form.Label>
+                    </Col>
+                    <Col xs={7}>
+                      <Form.Control
+                        className="schedules-input"
+                        type="text"
+                        value={`${clienteActual.nombre} ${clienteActual.apellido}`}
+                        readOnly
+                      />
+                    </Col>
+                  </Row>
 
-                <Row className="mb-3 align-items-center">
-                  <Col xs={4}>
-                    <Form.Label className="schedules-label">Numero de Cita</Form.Label>
-                  </Col>
-                  <Col xs={5}>
-                    <Form.Control
-                      className="schedules-input"
-                      type="number"
-                      name="numeroCita"
-                      min={0}
-                      value={formData.numeroCita}
-                      onKeyDown={blockNegativeKeys}
-                      onInput={forcePositive}
-                      onChange={handleChange}
-                    />
-                  </Col>
-                </Row>
+                  <Row className="mb-3 align-items-center">
+                    <Col xs={4}>
+                      <Form.Label className="schedules-label">Rut</Form.Label>
+                    </Col>
+                    <Col xs={7}>
+                      <Form.Control
+                        className="schedules-input"
+                        type="text"
+                        value={clienteActual.rut}
+                        readOnly
+                      />
+                    </Col>
+                  </Row>
 
-                <Row className="mb-3 align-items-center">
-                  <Col xs={4}>
-                    <Form.Label className="schedules-label">Paciente</Form.Label>
-                  </Col>
-                  <Col xs={7}>
-                    <Form.Control
-                      className="schedules-input"
-                      type="text"
-                      name="paciente"
-                      value={formData.paciente}
-                      onChange={handleChange}
-                      required
-                    />
-                  </Col>
-                </Row>
+                  <Row className="mb-3 align-items-center">
+                    <Col xs={4}>
+                      <Form.Label className="schedules-label">Sintomas</Form.Label>
+                    </Col>
+                    <Col xs={7}>
+                      <Form.Control
+                        className="schedules-input"
+                        as="textarea"
+                        name="sintomas"
+                        rows={2}
+                        value={formData.sintomas}
+                        onChange={handleChange}
+                      />
+                    </Col>
+                  </Row>
+                </Col>
 
-                <Row className="mb-3 align-items-center">
-                  <Col xs={4}>
-                    <Form.Label className="schedules-label">Rut</Form.Label>
-                  </Col>
-                  <Col xs={7}>
-                    <Form.Control
-                      className="schedules-input"
-                      type="text"
-                      name="rut"
-                      placeholder="12345678-9"
-                      value={formData.rut}
-                      onChange={handleChange}
-                      required
-                    />
-                  </Col>
-                </Row>
+                <Col md={6}>
+                  <Row className="mb-3 align-items-center">
+                    <Col xs={4}>
+                      <Form.Label className="schedules-label">Fecha</Form.Label>
+                    </Col>
+                    <Col xs={7}>
+                      <Form.Control
+                        className="schedules-input"
+                        type="date"
+                        name="fecha"
+                        value={formData.fecha}
+                        onChange={handleChange}
+                        required
+                      />
+                    </Col>
+                  </Row>
 
-                <Row className="mb-3 align-items-center">
-                  <Col xs={4}>
-                    <Form.Label className="schedules-label">Sintomas</Form.Label>
-                  </Col>
-                  <Col xs={7}>
-                    <Form.Control
-                      className="schedules-input"
-                      as="textarea"
-                      name="sintomas"
-                      rows={2}
-                      value={formData.sintomas}
-                      onChange={handleChange}
-                    />
-                  </Col>
-                </Row>
-              </Col>
+                  <Row className="mb-3 align-items-center">
+                    <Col xs={4}>
+                      <Form.Label className="schedules-label">Direccion</Form.Label>
+                    </Col>
+                    <Col xs={7}>
+                      <Form.Control
+                        className="schedules-input"
+                        type="text"
+                        value={clienteActual.direccion}
+                        readOnly
+                      />
+                    </Col>
+                  </Row>
 
-              <Col md={6}>
-                <Row className="mb-3 align-items-center">
-                  <Col xs={4}>
-                    <Form.Label className="schedules-label">Fecha</Form.Label>
-                  </Col>
-                  <Col xs={7}>
-                    <Form.Control
-                      className="schedules-input"
-                      type="date"
-                      name="fecha"
-                      value={formData.fecha}
-                      onChange={handleChange}
-                      required
-                    />
-                  </Col>
-                </Row>
-
-                <Row className="mb-3 align-items-center">
-                  <Col xs={4}>
-                    <Form.Label className="schedules-label">Direccion</Form.Label>
-                  </Col>
-                  <Col xs={7}>
-                    <Form.Control
-                      className="schedules-input"
-                      type="text"
-                      name="direccion"
-                      value={formData.direccion}
-                      onChange={handleChange}
-                      required
-                    />
-                  </Col>
-                </Row>
-
-                <Row className="mb-3 align-items-center">
-                  <Col xs={4}>
-                    <Form.Label className="schedules-label">Telefono</Form.Label>
-                  </Col>
-                  <Col xs={7}>
-                    <Form.Control
-                      className="schedules-input"
-                      type="tel"
-                      name="telefono"
-                      placeholder="+56912345678"
-                      value={formData.telefono}
-                      onChange={handleChange}
-                      required
-                    />
-                  </Col>
-                </Row>
-              </Col>
-            </Row>
+                  <Row className="mb-3 align-items-center">
+                    <Col xs={4}>
+                      <Form.Label className="schedules-label">Telefono</Form.Label>
+                    </Col>
+                    <Col xs={7}>
+                      <Form.Control
+                        className="schedules-input"
+                        type="tel"
+                        value={clienteActual.telefono}
+                        readOnly
+                      />
+                    </Col>
+                  </Row>
+                </Col>
+              </Row>
+            ) : (
+              <p className="schedules-label" style={{ color: 'red' }}>
+                No se encontró tu perfil de cliente. Contacta al administrador.
+              </p>
+            )}
           </div>
 
           {/* Sección médico */}
@@ -267,7 +303,6 @@ function Agendar() {
                 <Form.Control
                   className="schedules-input"
                   type="text"
-                  name="especialidad"
                   value={formData.especialidad}
                   readOnly
                 />
@@ -300,7 +335,9 @@ function Agendar() {
           {/* Botón */}
           <div className="schedules-btn-wrapper">
             <Button className="schedules-btn-outline" href="/">Cancelar</Button>
-            <Button className="schedules-btn-primary" type="submit">Agendar Cita</Button>
+            <Button className="schedules-btn-primary" type="submit" disabled={loadingCliente || !clienteActual}>
+              Agendar Cita
+            </Button>
           </div>
 
         </Form>
