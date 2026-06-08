@@ -2,16 +2,11 @@ import axios from "axios";
 
 const API_URL = "https://rednorte-gestion-osku.onrender.com/api/listaEspera";
 
-const formatDate = (date) => {
-  const d = new Date(date);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-};
-
 const ListaEsperaService = {
   create: async ({ fecha_solitud, prioridad, hospital }) => {
     try {
       const body = {
-        fecha_solitud: formatDate(fecha_solitud),
+        fecha_solitud, 
         prioridad,
         hospital,
       };
