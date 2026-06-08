@@ -3,11 +3,14 @@ import axios from "axios";
 const API_URL = "https://rednorte-gestion-osku.onrender.com/api/pago";
 
 const PagoService = {
-  create: async ({ monto, fecha_pago, metodo_pago, estado }) => {
+  create: async ({ monto, metodo_pago, estado }) => {
     try {
+      const today = new Date();
+      const fecha_pago = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
       const body = {
         monto,
-        fecha_pago,   
+        fecha_pago,
         metodo_pago,
         estado,
       };
@@ -18,7 +21,6 @@ const PagoService = {
       if (error.response) {
         console.error("Pago backend error:", JSON.stringify(error.response.data, null, 2));
       }
-      console.error("Error al crear pago:", error);
       throw error;
     }
   },
