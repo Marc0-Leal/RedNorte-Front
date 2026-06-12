@@ -8,7 +8,9 @@ import MedicoService from '../services/MedicoService';
 import HospitalService from '../services/HospitalService';
 import ClienteService from '../services/ClienteService';
 import PagoService from '../services/PagoService';
+import AsignacionService from '../services/AsignacionService';
 import '../../src/styles/pages/Agendar-Cita.css';
+
 
 function Agendar() {
   const navigate = useNavigate();
@@ -91,6 +93,15 @@ function Agendar() {
         fecha_solitud: formData.fecha,
         prioridad: "Normal",
         hospital: hospital,
+      });
+
+      await AsignacionService.create({
+        listaEsperaId: listaEspera.id,
+        prioridad: "ALTA",
+        medicoDisponible: true,
+        mismaRegion: true,
+        medicoId: Number(formData.medicoId),
+        hospitalId: Number(formData.hospitalId),
       });
 
       await CitaService.create({
