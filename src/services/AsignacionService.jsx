@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "https://rednorte-optimizacion.onrender.com/";
+const API_URL = "https://rednorte-optimizacion.onrender.com/api/asignacion";
 
 const AsignacionService = {
   create: async ({ listaEsperaId, prioridad, medicoDisponible, mismaRegion, medicoId, hospitalId }) => {
