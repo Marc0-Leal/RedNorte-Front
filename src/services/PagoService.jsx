@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "https://rednorte-gestion-osku.onrender.com/api/pago";
+const API_URL = "https://rednorte-api-gateway-k27o.onrender.com/api/gestion/pago";
 
 const PagoService = {
   create: async ({ monto, metodo_pago, estado }) => {

@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "https://rednorte-gestion-osku.onrender.com/api/listaEspera";
+const API_URL = "https://rednorte-api-gateway-k27o.onrender.com/api/gestion/listaEspera";
 
 const ListaEsperaService = {
   create: async ({ fecha_solitud, prioridad, hospital }) => {

@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "https://rednorte-gestion-osku.onrender.com/api/citaMedica";
+const API_URL = "https://rednorte-api-gateway-k27o.onrender.com/api/gestion/citaMedica";
 
 const formatDate = (date) => {
   const d = new Date(date);
