@@ -13,7 +13,7 @@ export default function TusCitas() {
   const [openId, setOpenId] = useState(null);
 
   useEffect(() => {
-    fetch("https://rednorte-gestion-osku.onrender.com/api/citaMedica")
+    fetch("https://rednorte-api-gateway-k27o.onrender.com/api/clinica/citaMedica")
       .then(res => res.json())
       .then(data => setCitas(data))
       .catch(() => setCitas([]));
