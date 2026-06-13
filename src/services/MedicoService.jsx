@@ -1,4 +1,5 @@
 import axios from "axios";
+import Cookies from "js-cookie";
 
 const API_URL = "https://rednorte-gestion-osku.onrender.com/api/medico";
 
