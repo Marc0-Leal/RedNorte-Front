@@ -89,7 +89,7 @@ const handleCreateUser = async () => {
     });
 
     // 2. Create Cliente in backend
-    await axios.post("https://rednorte-gestion-osku.onrender.com/api/cliente", {
+    await axios.post("https://rednorte-api-gateway-k27o.onrender.com/api/clinica/cliente", {
       nombre,
       apellido,
       rut,
