@@ -2,6 +2,10 @@ import axios from "axios";
 
 const API_URL = "https://rednorte-api-gateway-k27o.onrender.com/api/gestion/pago";
 
+const getAuthHeader = () => ({
+  headers: { Authorization: `Bearer ${Cookies.get("token")}` }
+});
+
 const PagoService = {
   create: async ({ monto, metodo_pago, estado }) => {
     try {
@@ -15,7 +19,7 @@ const PagoService = {
         estado,
       };
       console.log("Pago body enviado:", JSON.stringify(body, null, 2));
-      const res = await axios.post(API_URL, body);
+      const res = await axios.post(API_URL, body, getAuthHeader());
       return res.data;
     } catch (error) {
       if (error.response) {

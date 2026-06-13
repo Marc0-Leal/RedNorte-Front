@@ -2,6 +2,10 @@ import axios from "axios";
 
 const API_URL = "https://rednorte-api-gateway-k27o.onrender.com/api/optimizacion/asignacion";
 
+const getAuthHeader = () => ({
+  headers: { Authorization: `Bearer ${Cookies.get("token")}` }
+});
+
 const AsignacionService = {
   create: async ({ listaEsperaId, prioridad, medicoDisponible, mismaRegion, medicoId, hospitalId }) => {
     try {
@@ -14,7 +18,7 @@ const AsignacionService = {
           medicoId,
           hospitalId,
         },
-      });
+      }, getAuthHeader());
       return res.data;
     } catch (error) {
       if (error.response) {
@@ -26,7 +30,7 @@ const AsignacionService = {
 
   getAll: async () => {
     try {
-      const res = await axios.get(API_URL);
+      const res = await axios.get(API_URL, getAuthHeader);
       return res.data;
     } catch (error) {
       console.error("Error al obtener asignaciones:", error);
@@ -36,7 +40,7 @@ const AsignacionService = {
 
   getById: async (id) => {
     try {
-      const res = await axios.get(`${API_URL}/${id}`);
+      const res = await axios.get(`${API_URL}/${id}`, getAuthHeader());
       return res.data;
     } catch (error) {
       console.error(`Error al obtener asignacion ${id}:`, error);
@@ -48,7 +52,7 @@ const AsignacionService = {
     try {
       const res = await axios.patch(`${API_URL}/${id}/estado`, null, {
         params: { nuevoEstado },
-      });
+      }, getAuthHeader());
       return res.data;
     } catch (error) {
       console.error(`Error al actualizar estado asignacion ${id}:`, error);

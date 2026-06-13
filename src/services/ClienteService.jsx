@@ -2,10 +2,14 @@ import axios from "axios";
 
 const API_URL = "https://rednorte-api-gateway-k27o.onrender.com/api/gestion/cliente";
 
+const getAuthHeader = () => ({
+  headers: { Authorization: `Bearer ${Cookies.get("token")}` }
+});
+
 const ClienteService = {
   getAll: async () => {
     try {
-      const res = await axios.get(API_URL);
+      const res = await axios.get(API_URL, getAuthHeader());
       return res.data;
     } catch (error) {
       console.error("Error al obtener clientes:", error);
@@ -15,7 +19,7 @@ const ClienteService = {
 
   getByRut: async (rut) => {
     try {
-      const res = await axios.get(API_URL);
+      const res = await axios.get(API_URL, getAuthHeader());
       const clientes = res.data;
       return clientes.find((c) => c.rut === rut) || null;
     } catch (error) {

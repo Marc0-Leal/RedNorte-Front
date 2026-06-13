@@ -2,10 +2,14 @@ import axios from "axios";
 
 const API_URL = "https://rednorte-api-gateway-k27o.onrender.com/api/gestion/hospital";
 
+const getAuthHeader = () => ({
+  headers: { Authorization: `Bearer ${Cookies.get("token")}` }
+});
+
 const HospitalService = {
   getAll: async () => {
     try {
-      const res = await axios.get(API_URL);
+      const res = await axios.get(API_URL, getAuthHeader());
       return res.data;
     } catch (error) {
       console.error("Error al obtener hospitales:", error);
@@ -14,7 +18,7 @@ const HospitalService = {
   },
     getById: async (id) => {
     try {
-      const res = await axios.get(`${API_URL}/${id}`);
+      const res = await axios.get(`${API_URL}/${id}`, getAuthHeader());
       return res.data;
     } catch (error) {
       console.error(`Error al obtener hospital ${id}:`, error);

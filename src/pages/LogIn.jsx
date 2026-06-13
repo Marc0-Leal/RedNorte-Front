@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Container } from 'react-bootstrap';
 
+import axios from "axios";
+
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth, db } from "../firebase";
 import { collection, getDocs } from "firebase/firestore";
@@ -56,6 +58,14 @@ function LogIn() {
                 usuarioEncontrado.email,
                 password
             );
+
+            // Obtener token JWT del gateway
+            const tokenRes = await axios.post("https://rednorte-api-gateway-k27o.onrender.com/auth/token", {
+                subject: usuarioEncontrado.rut,
+                roles: [usuarioEncontrado.rol],
+                expiresInSeconds: 3600
+            });
+            Cookies.set("token", tokenRes.data.accessToken);
 
             Cookies.set("rol", usuarioEncontrado.rol);
             Cookies.set("rut", usuarioEncontrado.rut);
