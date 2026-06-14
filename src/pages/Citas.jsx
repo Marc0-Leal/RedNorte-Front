@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import '../styles/pages/Citas.css';
+import Cookies from 'js-cookie';
+import CitaService from '../services/CitaService';
 
 function fmtFecha(f) {
   if (!f) return '—';
@@ -13,9 +15,8 @@ export default function TusCitas() {
   const [openId, setOpenId] = useState(null);
 
   useEffect(() => {
-    fetch("https://rednorte-api-gateway-k27o.onrender.com/api/clinica/citaMedica")
-      .then(res => res.json())
-      .then(data => setCitas(data))
+    CitaService.getAll()
+      .then(data => setCitas(Array.isArray(data) ? data : []))
       .catch(() => setCitas([]));
   }, []);
 
