@@ -89,7 +89,7 @@ export default function TusCitas() {
                       </div>
                       <div className="detail-item detail-item--full">
                         <span className="detail-label">Síntomas</span>
-                        <span className="detail-value">Sin síntomas registrados</span>
+                        <span className="detail-value">{cita.sintomas || 'Sin síntomas registrados'}</span>
                       </div>
                     </div>
 
