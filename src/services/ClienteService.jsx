@@ -21,6 +21,7 @@ const ClienteService = {
   getByRut: async (rut) => {
     try {
       const res = await axios.get(API_URL, getAuthHeader());
+      console.log("Cliente response:", res.data);
       const clientes = res.data;
       return clientes.find((c) => c.rut === rut) || null;
     } catch (error) {

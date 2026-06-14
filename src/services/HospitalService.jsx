@@ -11,6 +11,7 @@ const HospitalService = {
   getAll: async () => {
     try {
       const res = await axios.get(API_URL, getAuthHeader());
+      console.log("Hospital response:", res.data);
       return res.data;
     } catch (error) {
       console.error("Error al obtener hospitales:", error);
