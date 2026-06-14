@@ -112,6 +112,7 @@ function Agendar() {
         cliente: { id: clienteActual.id },
         pago: { id: pago.id },
         listaEspera: { id: listaEspera.id },
+        sintomas: formData.sintomas,
       });
 
       setAgendada(true);
