@@ -95,14 +95,14 @@ function Agendar() {
         hospital: hospital,
       });
 
-      await AsignacionService.create({
-        listaEsperaId: listaEspera.id,
-        prioridad: "ALTA",
-        medicoDisponible: true,
-        mismaRegion: true,
-        medicoId: Number(formData.medicoId),
-        hospitalId: Number(formData.hospitalId),
-      });
+        // await AsignacionService.create({   // ← comentado temporalmente
+        //   listaEsperaId: listaEspera.id,
+        //   prioridad: "ALTA",
+        //   medicoDisponible: true,
+        //   mismaRegion: true,
+        //   medicoId: Number(formData.medicoId),
+        //   hospitalId: Number(formData.hospitalId),
+        // });
 
       await CitaService.create({
         fecha: formData.fecha,
