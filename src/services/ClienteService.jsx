@@ -1,7 +1,7 @@
 import axios from "axios";
 import Cookies from "js-cookie";
 
-const API_URL = "https://rednorte-api-gateway-k27o.onrender.com/api/hospital/cliente";
+const API_URL = "https://rednorte-api-gateway-k27o.onrender.com/api/cliente";
 
 const getAuthHeader = () => ({
   headers: { Authorization: `Bearer ${Cookies.get("token")}` }
