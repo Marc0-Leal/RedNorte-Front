@@ -27,11 +27,23 @@ function Agendar() {
   const [clienteActual, setClienteActual] = useState(null);
   const [loadingCliente, setLoadingCliente] = useState(true);
 
+  // Cargar hospitales al montar
   useEffect(() => {
-    MedicoService.getAll().then(setMedicos).catch(console.error);
     HospitalService.getAll().then(setHospitales).catch(console.error);
   }, []);
 
+  // Cargar médicos cuando cambia el hospital
+  useEffect(() => {
+    if (formData.hospitalId) {
+      MedicoService.getByHospital(Number(formData.hospitalId))
+        .then(setMedicos)
+        .catch(console.error);
+    } else {
+      setMedicos([]);
+    }
+  }, [formData.hospitalId]);
+
+  // Cargar cliente actual
   useEffect(() => {
     const fetchCliente = async () => {
       try {
@@ -62,6 +74,18 @@ function Agendar() {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
+    // Al cambiar hospital, limpiar médico y especialidad
+    if (name === 'hospitalId') {
+      setFormData((prev) => ({
+        ...prev,
+        hospitalId: value,
+        medicoId: '',
+        especialidad: '',
+      }));
+      return;
+    }
+
+    // Al cambiar médico, autocompletar especialidad
     if (name === 'medicoId') {
       const selected = medicos.find(m => m.id === Number(value));
       setFormData((prev) => ({
@@ -94,15 +118,6 @@ function Agendar() {
         prioridad: "Normal",
         hospital: hospital,
       });
-
-      // await AsignacionService.create({
-      //   listaEsperaId: listaEspera.id,
-      //   prioridad: "ALTA",
-      //   medicoDisponible: true,
-      //   mismaRegion: true,
-      //   medicoId: Number(formData.medicoId),
-      //   hospitalId: Number(formData.hospitalId),
-      // });
 
       await CitaService.create({
         fecha: formData.fecha,
@@ -272,39 +287,6 @@ function Agendar() {
 
             <Row className="mb-3 align-items-center">
               <Col xs={2}>
-                <Form.Label className="schedules-label schedules-label-light">Medico</Form.Label>
-              </Col>
-              <Col xs={4}>
-                <Form.Select
-                  className="schedules-input"
-                  name="medicoId"
-                  value={formData.medicoId}
-                  onChange={handleChange}
-                  required
-                >
-                  <option value="">Seleccionar médico...</option>
-                  {medicos.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.nombre} {m.apellido}
-                    </option>
-                  ))}
-                </Form.Select>
-              </Col>
-              <Col xs={2}>
-                <Form.Label className="schedules-label schedules-label-light">Especialidad</Form.Label>
-              </Col>
-              <Col xs={4}>
-                <Form.Control
-                  className="schedules-input"
-                  type="text"
-                  value={formData.especialidad}
-                  readOnly
-                />
-              </Col>
-            </Row>
-
-            <Row className="align-items-center">
-              <Col xs={2}>
                 <Form.Label className="schedules-label schedules-label-light">Centro Medico</Form.Label>
               </Col>
               <Col xs={4}>
@@ -322,6 +304,42 @@ function Agendar() {
                     </option>
                   ))}
                 </Form.Select>
+              </Col>
+            </Row>
+
+            <Row className="mb-3 align-items-center">
+              <Col xs={2}>
+                <Form.Label className="schedules-label schedules-label-light">Medico</Form.Label>
+              </Col>
+              <Col xs={4}>
+                <Form.Select
+                  className="schedules-input"
+                  name="medicoId"
+                  value={formData.medicoId}
+                  onChange={handleChange}
+                  required
+                  disabled={!formData.hospitalId}
+                >
+                  <option value="">
+                    {formData.hospitalId ? 'Seleccionar médico...' : 'Primero selecciona un hospital'}
+                  </option>
+                  {medicos.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.nombre} {m.apellido}
+                    </option>
+                  ))}
+                </Form.Select>
+              </Col>
+              <Col xs={2}>
+                <Form.Label className="schedules-label schedules-label-light">Especialidad</Form.Label>
+              </Col>
+              <Col xs={4}>
+                <Form.Control
+                  className="schedules-input"
+                  type="text"
+                  value={formData.especialidad}
+                  readOnly
+                />
               </Col>
             </Row>
           </div>
