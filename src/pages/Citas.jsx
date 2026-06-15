@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../styles/pages/Citas.css';
 
 function fmtFecha(f) {
@@ -11,9 +12,10 @@ function fmtFecha(f) {
 export default function TusCitas() {
   const [citas, setCitas] = useState([]);
   const [openId, setOpenId] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    fetch("https://rednorte-api-gateway-k27o.onrender.com/api/clinica/citaMedica")
+    fetch("https://rednorte-api-gateway-k27o.onrender.com/api/citaMedica")
       .then(res => res.json())
       .then(data => setCitas(data))
       .catch(() => setCitas([]));
@@ -59,7 +61,7 @@ export default function TusCitas() {
                   </div>
 
                   <div className="col acciones" onClick={(e) => e.stopPropagation()}>
-                    <button className={`btn ${activa ? 'btn-verde' : 'btn-deshabilitado'}`} disabled={!activa}>Reagendar</button>
+                    <button className={`btn ${activa ? 'btn-verde' : 'btn-deshabilitado'}`} disabled={!activa} onClick={() =>navigate(`/reagendar/${cita.id}`)}>Reagendar</button>
                     <button className={`btn ${activa ? 'btn-rojo' : 'btn-deshabilitado'}`} disabled={!activa} onClick={() => cancelarCita(cita.id)}>Cancelar</button>
                   </div>
 
