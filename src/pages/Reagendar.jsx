@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useState, useEffect } from 'react';
 import { Container, Row, Col, Form, Button, Alert } from 'react-bootstrap';
 import { useNavigate, useParams } from 'react-router-dom';
 import Cookies from 'js-cookie';
+import MedicoService from '../services/MedicoService';
+import HospitalService from '../services/HospitalService';
+import CitaService from '../services/CitaService';
 import '../../src/styles/pages/Agendar-Cita.css';
 
 const API = "https://rednorte-api-gateway-k27o.onrender.com/api/citaMedica";
@@ -10,36 +12,64 @@ const API = "https://rednorte-api-gateway-k27o.onrender.com/api/citaMedica";
 function Reagendar() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { register, handleSubmit, reset, formState: { errors } } = useForm();
+
+  const [formData, setFormData] = useState({
+    sintomas: '',
+    fecha: '',
+    medicoId: '',
+    especialidad: '',
+    hospitalId: '',
+  });
+  const [clienteActual, setClienteActual] = useState(null);
+  const [medicos, setMedicos] = useState([]);
+  const [hospitales, setHospitales] = useState([]);
   const [reagendada, setReagendada] = useState(false);
   const [cargando, setCargando] = useState(true);
 
+  // Cargar médicos y hospitales
+  useEffect(() => {
+    MedicoService.getAll().then(setMedicos).catch(console.error);
+    HospitalService.getAll().then(setHospitales).catch(console.error);
+  }, []);
+
+  // Precargar datos de la cita
   useEffect(() => {
     fetch(`${API}/${id}`, {
       headers: { Authorization: `Bearer ${Cookies.get("token")}` }
     })
       .then(res => res.json())
       .then(cita => {
-        reset({
-          numeroCita:   cita.numeroCita ?? 0,
-          paciente:     cita.cliente ? `${cita.cliente.nombre} ${cita.cliente.apellido}` : '',
-          rut:          cita.cliente?.rut ?? '',
+        setClienteActual(cita.cliente);
+        setFormData({
           sintomas:     cita.sintomas ?? '',
           fecha:        cita.fecha?.slice(0, 10) ?? '',
-          direccion:    cita.cliente?.direccion ?? '',
-          telefono:     cita.cliente?.telefono ?? '',
-          medico:       cita.medico ? `${cita.medico.nombre} ${cita.medico.apellido}` : '',
+          medicoId:     cita.medico?.id ?? '',
           especialidad: cita.medico?.especialidad ?? '',
-          centroMedico: cita.centroMedico ?? '',
-          precio:       cita.precio ?? 0,
-          total:        cita.total ?? 0,
+          hospitalId:   cita.listaEspera?.hospital?.id ?? '',
         });
       })
       .catch(() => alert('No se pudo cargar la cita.'))
       .finally(() => setCargando(false));
-  }, [id, reset]);
+  }, [id]);
 
-  const onSubmit = async (data) => {
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    if (name === 'medicoId') {
+      const selected = medicos.find(m => m.id === Number(value));
+      setFormData(prev => ({
+        ...prev,
+        medicoId: value,
+        especialidad: selected ? selected.especialidad : '',
+      }));
+      return;
+    }
+
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     try {
       const res = await fetch(`${API}/${id}`, {
         method: 'PATCH',
@@ -47,7 +77,11 @@ function Reagendar() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${Cookies.get("token")}`,
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          fecha: formData.fecha,
+          sintomas: formData.sintomas,
+          medico: { id: Number(formData.medicoId) },
+        }),
       });
       if (!res.ok) throw new Error();
       setReagendada(true);
@@ -77,41 +111,35 @@ function Reagendar() {
       </div>
 
       <Container className="schedules-container">
-        <Form noValidate onSubmit={handleSubmit(onSubmit)}>
+        <Form noValidate onSubmit={handleSubmit}>
 
+          {/* Datos del paciente */}
           <div className="schedules-card">
             <h2 className="schedules-section-title">Datos del Paciente</h2>
             <Row>
               <Col md={6}>
                 <Row className="mb-3 align-items-center">
-                  <Col xs={4}><Form.Label className="schedules-label">Numero de Cita</Form.Label></Col>
-                  <Col xs={5}>
-                    <Form.Control className="schedules-input" type="number" {...register('numeroCita')} />
-                  </Col>
-                </Row>
-
-                <Row className="mb-3 align-items-center">
                   <Col xs={4}><Form.Label className="schedules-label">Paciente</Form.Label></Col>
                   <Col xs={7}>
-                    <Form.Control className="schedules-input" type="text" isInvalid={!!errors.paciente}
-                      {...register('paciente', { required: 'Campo requerido' })} />
-                    <Form.Control.Feedback type="invalid">{errors.paciente?.message}</Form.Control.Feedback>
+                    <Form.Control className="schedules-input" type="text"
+                      value={clienteActual ? `${clienteActual.nombre} ${clienteActual.apellido}` : ''}
+                      readOnly />
                   </Col>
                 </Row>
 
                 <Row className="mb-3 align-items-center">
                   <Col xs={4}><Form.Label className="schedules-label">Rut</Form.Label></Col>
                   <Col xs={7}>
-                    <Form.Control className="schedules-input" type="text" isInvalid={!!errors.rut}
-                      {...register('rut', { required: 'Campo requerido' })} />
-                    <Form.Control.Feedback type="invalid">{errors.rut?.message}</Form.Control.Feedback>
+                    <Form.Control className="schedules-input" type="text"
+                      value={clienteActual?.rut ?? ''} readOnly />
                   </Col>
                 </Row>
 
                 <Row className="mb-3 align-items-center">
                   <Col xs={4}><Form.Label className="schedules-label">Sintomas</Form.Label></Col>
                   <Col xs={7}>
-                    <Form.Control className="schedules-input" as="textarea" rows={2} {...register('sintomas')} />
+                    <Form.Control className="schedules-input" as="textarea" rows={2}
+                      name="sintomas" value={formData.sintomas} onChange={handleChange} />
                   </Col>
                 </Row>
               </Col>
@@ -120,60 +148,65 @@ function Reagendar() {
                 <Row className="mb-3 align-items-center">
                   <Col xs={4}><Form.Label className="schedules-label">Fecha</Form.Label></Col>
                   <Col xs={7}>
-                    <Form.Control className="schedules-input" type="date" isInvalid={!!errors.fecha}
-                      {...register('fecha', { required: 'Campo requerido' })} />
-                    <Form.Control.Feedback type="invalid">{errors.fecha?.message}</Form.Control.Feedback>
+                    <Form.Control className="schedules-input" type="date"
+                      name="fecha" value={formData.fecha} onChange={handleChange} required />
                   </Col>
                 </Row>
 
                 <Row className="mb-3 align-items-center">
                   <Col xs={4}><Form.Label className="schedules-label">Direccion</Form.Label></Col>
                   <Col xs={7}>
-                    <Form.Control className="schedules-input" type="text" isInvalid={!!errors.direccion}
-                      {...register('direccion', { required: 'Campo requerido' })} />
-                    <Form.Control.Feedback type="invalid">{errors.direccion?.message}</Form.Control.Feedback>
+                    <Form.Control className="schedules-input" type="text"
+                      value={clienteActual?.direccion ?? ''} readOnly />
                   </Col>
                 </Row>
 
                 <Row className="mb-3 align-items-center">
                   <Col xs={4}><Form.Label className="schedules-label">Telefono</Form.Label></Col>
                   <Col xs={7}>
-                    <Form.Control className="schedules-input" type="tel" isInvalid={!!errors.telefono}
-                      {...register('telefono', { required: 'Campo requerido' })} />
-                    <Form.Control.Feedback type="invalid">{errors.telefono?.message}</Form.Control.Feedback>
+                    <Form.Control className="schedules-input" type="tel"
+                      value={clienteActual?.telefono ?? ''} readOnly />
                   </Col>
                 </Row>
               </Col>
             </Row>
           </div>
 
+          {/* Datos médicos */}
           <div className="schedules-card schedules-card-dark">
             <h2 className="schedules-section-title schedules-section-title-light">Datos Médicos</h2>
+
             <Row className="mb-3 align-items-center">
               <Col xs={2}><Form.Label className="schedules-label schedules-label-light">Medico</Form.Label></Col>
               <Col xs={4}>
-                <Form.Control className="schedules-input" type="text" isInvalid={!!errors.medico}
-                  {...register('medico', { required: 'Campo requerido' })} />
-                <Form.Control.Feedback type="invalid">{errors.medico?.message}</Form.Control.Feedback>
+                <Form.Select className="schedules-input" name="medicoId"
+                  value={formData.medicoId} onChange={handleChange} required>
+                  <option value="">Seleccionar médico...</option>
+                  {medicos.map(m => (
+                    <option key={m.id} value={m.id}>{m.nombre} {m.apellido}</option>
+                  ))}
+                </Form.Select>
               </Col>
               <Col xs={2}><Form.Label className="schedules-label schedules-label-light">Especialidad</Form.Label></Col>
               <Col xs={4}>
-                <Form.Control className="schedules-input" type="text" isInvalid={!!errors.especialidad}
-                  {...register('especialidad', { required: 'Campo requerido' })} />
-                <Form.Control.Feedback type="invalid">{errors.especialidad?.message}</Form.Control.Feedback>
+                <Form.Control className="schedules-input" type="text"
+                  value={formData.especialidad} readOnly />
               </Col>
             </Row>
 
             <Row className="align-items-center">
               <Col xs={2}><Form.Label className="schedules-label schedules-label-light">Centro Medico</Form.Label></Col>
               <Col xs={4}>
-                <Form.Control className="schedules-input" type="text" isInvalid={!!errors.centroMedico}
-                  {...register('centroMedico', { required: 'Campo requerido' })} />
-                <Form.Control.Feedback type="invalid">{errors.centroMedico?.message}</Form.Control.Feedback>
+                <Form.Select className="schedules-input" name="hospitalId"
+                  value={formData.hospitalId} onChange={handleChange} required>
+                  <option value="">Seleccionar hospital...</option>
+                  {hospitales.map(h => (
+                    <option key={h.id} value={h.id}>{h.nombre}</option>
+                  ))}
+                </Form.Select>
               </Col>
             </Row>
           </div>
-
 
           <div className="schedules-btn-wrapper">
             <Button className="schedules-btn-outline" onClick={() => navigate('/tus-citas')}>Cancelar</Button>
