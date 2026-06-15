@@ -174,21 +174,6 @@ function Reagendar() {
             </Row>
           </div>
 
-          <div className="schedules-card schedules-price-row">
-            <Row className="justify-content-end align-items-center">
-              <Col xs="auto"><Form.Label className="schedules-label mb-0">Precio</Form.Label></Col>
-              <Col xs={3}>
-                <Form.Control className="schedules-input" type="number" min={0}
-                  isInvalid={!!errors.precio}
-                  {...register('precio', { min: { value: 0, message: 'El precio no puede ser negativo' } })} />
-                <Form.Control.Feedback type="invalid">{errors.precio?.message}</Form.Control.Feedback>
-              </Col>
-              <Col xs="auto"><Form.Label className="schedules-label mb-0">Total:</Form.Label></Col>
-              <Col xs={3}>
-                <Form.Control className="schedules-input" type="number" min={0} readOnly {...register('total')} />
-              </Col>
-            </Row>
-          </div>
 
           <div className="schedules-btn-wrapper">
             <Button className="schedules-btn-outline" onClick={() => navigate('/tus-citas')}>Cancelar</Button>
