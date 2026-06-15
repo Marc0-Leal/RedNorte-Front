@@ -1,24 +1,137 @@
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useState, useEffect } from 'react';
 import { Container, Row, Col, Form, Button, Alert } from 'react-bootstrap';
 import { useNavigate } from "react-router-dom";
+import Cookies from "js-cookie";
+import CitaService from '../services/CitaService';
+import ListaEsperaService from '../services/ListaEsperaService';
+import MedicoService from '../services/MedicoService';
+import HospitalService from '../services/HospitalService';
+import ClienteService from '../services/ClienteService';
+import PagoService from '../services/PagoService';
+import AsignacionService from '../services/AsignacionService';
 import '../../src/styles/pages/Agendar-Cita.css';
+
 
 function Agendar() {
   const navigate = useNavigate();
-  const { register, handleSubmit, formState: { errors } } = useForm();
+  const [formData, setFormData] = useState({
+    sintomas: '',
+    fecha: '',
+    medicoId: '',
+    especialidad: '',
+    hospitalId: '',
+  });
+  const [medicos, setMedicos] = useState([]);
+  const [hospitales, setHospitales] = useState([]);
   const [agendada, setAgendada] = useState(false);
+  const [clienteActual, setClienteActual] = useState(null);
+  const [loadingCliente, setLoadingCliente] = useState(true);
 
-  const onSubmit = (data) => {
-    console.log(data);
-    setAgendada(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  useEffect(() => {
+    MedicoService.getAll().then(setMedicos).catch(console.error);
+    HospitalService.getAll().then(setHospitales).catch(console.error);
+  }, []);
 
-    setTimeout(() => {
+  useEffect(() => {
+    const fetchCliente = async () => {
+      try {
+        const rutUsuario = Cookies.get("rut");
+        if (!rutUsuario) {
+          alert('Debes iniciar sesión para agendar una cita');
+          navigate('/LogIn');
+          return;
+        }
 
-    navigate("/tus-citas");
+        const cliente = await ClienteService.getByRut(rutUsuario);
+        if (!cliente) {
+          alert('No se encontró tu perfil de cliente. Contacta al administrador.');
+          return;
+        }
 
-    }, 2000);
+        setClienteActual(cliente);
+      } catch (err) {
+        console.error('Error al obtener cliente:', err);
+      } finally {
+        setLoadingCliente(false);
+      }
+    };
+
+    fetchCliente();
+  }, []);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    if (name === 'medicoId') {
+      const selected = medicos.find(m => m.id === Number(value));
+      setFormData((prev) => ({
+        ...prev,
+        medicoId: value,
+        especialidad: selected ? selected.especialidad : '',
+      }));
+      return;
+    }
+
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!clienteActual) {
+      alert('No se pudo identificar tu perfil de cliente.');
+      return;
+    }
+    try {
+      const pago = await PagoService.create({
+        monto: 0,
+        metodo_pago: "efectivo",
+        estado: "pendiente",
+      });
+
+      const hospital = await HospitalService.getById(Number(formData.hospitalId));
+      const listaEspera = await ListaEsperaService.create({
+        fecha_solitud: formData.fecha,
+        prioridad: "Normal",
+        hospital: hospital,
+      });
+
+        // await AsignacionService.create({   // ← comentado temporalmente
+        //   listaEsperaId: listaEspera.id,
+        //   prioridad: "ALTA",
+        //   medicoDisponible: true,
+        //   mismaRegion: true,
+        //   medicoId: Number(formData.medicoId),
+        //   hospitalId: Number(formData.hospitalId),
+        // });
+
+      await CitaService.create({
+        fecha: formData.fecha,
+        hora: 0,
+        estado: "Activa",
+        medico: { id: Number(formData.medicoId) },
+        cliente: { id: clienteActual.id },
+        pago: { id: pago.id },
+        listaEspera: { id: listaEspera.id },
+        sintomas: formData.sintomas,
+      });
+
+      setAgendada(true);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setTimeout(() => navigate('/tus-citas'), 2000);
+    } catch (err) {
+      console.error(err);
+      alert('Error al agendar la cita');
+    }
+  };
+
+  const blockNegativeKeys = (e) => {
+    if (e.key === '-' || e.key === 'e' || e.key === '+') {
+      e.preventDefault();
+    }
+  };
+
+  const forcePositive = (e) => {
+    if (e.target.value < 0) e.target.value = 0;
   };
 
   return (
@@ -27,134 +140,124 @@ function Agendar() {
       {agendada && (
         <div className="schedules-alert-wrapper">
           <Alert className="schedules-alert" onClose={() => setAgendada(false)} dismissible>
-             ¡Cita agendada exitosamente!
+            ¡Cita agendada exitosamente!
           </Alert>
         </div>
       )}
 
-      {/* Hero header */}
       <div className="schedules-hero">
         <h1 className="schedules-hero-title">"RedNorte"Agendar Cita</h1>
         <p className="schedules-hero-sub">Completa el formulario para reservar tu atención médica no se te olvide revisar tus datos antes de confirmar.</p>
       </div>
 
       <Container className="schedules-container">
-        <Form noValidate onSubmit={handleSubmit(onSubmit)}>
+        <Form noValidate onSubmit={handleSubmit}>
 
           {/* Sección datos del paciente */}
           <div className="schedules-card">
             <h2 className="schedules-section-title">Datos del Paciente</h2>
 
-            <Row>
-              <Col md={6}>
-                <Row className="mb-3 align-items-center">
-                  <Col xs={4}>
-                    <Form.Label className="schedules-label">Numero de Cita</Form.Label>
-                  </Col>
-                  <Col xs={5}>
-                    <Form.Control
-                      className="schedules-input"
-                      type="number"
-                      defaultValue={0}
-                      {...register('numeroCita')}
-                    />
-                  </Col>
-                </Row>
+            {loadingCliente ? (
+              <p className="schedules-label">Cargando datos del paciente...</p>
+            ) : clienteActual ? (
+              <Row>
+                <Col md={6}>
+                  <Row className="mb-3 align-items-center">
+                    <Col xs={4}>
+                      <Form.Label className="schedules-label">Paciente</Form.Label>
+                    </Col>
+                    <Col xs={7}>
+                      <Form.Control
+                        className="schedules-input"
+                        type="text"
+                        value={`${clienteActual.nombre} ${clienteActual.apellido}`}
+                        readOnly
+                      />
+                    </Col>
+                  </Row>
 
-                <Row className="mb-3 align-items-center">
-                  <Col xs={4}>
-                    <Form.Label className="schedules-label">Paciente</Form.Label>
-                  </Col>
-                  <Col xs={7}>
-                    <Form.Control
-                      className="schedules-input"
-                      type="text"
-                      isInvalid={!!errors.paciente}
-                      {...register('paciente', { required: 'Campo requerido' })}
-                    />
-                    <Form.Control.Feedback type="invalid">{errors.paciente?.message}</Form.Control.Feedback>
-                  </Col>
-                </Row>
+                  <Row className="mb-3 align-items-center">
+                    <Col xs={4}>
+                      <Form.Label className="schedules-label">Rut</Form.Label>
+                    </Col>
+                    <Col xs={7}>
+                      <Form.Control
+                        className="schedules-input"
+                        type="text"
+                        value={clienteActual.rut}
+                        readOnly
+                      />
+                    </Col>
+                  </Row>
 
-                <Row className="mb-3 align-items-center">
-                  <Col xs={4}>
-                    <Form.Label className="schedules-label">Rut</Form.Label>
-                  </Col>
-                  <Col xs={7}>
-                    <Form.Control
-                      className="schedules-input"
-                      type="text"
-                      placeholder="12345678-9"
-                      isInvalid={!!errors.rut}
-                      {...register('rut', { required: 'Campo requerido' })}
-                    />
-                    <Form.Control.Feedback type="invalid">{errors.rut?.message}</Form.Control.Feedback>
-                  </Col>
-                </Row>
+                  <Row className="mb-3 align-items-center">
+                    <Col xs={4}>
+                      <Form.Label className="schedules-label">Sintomas</Form.Label>
+                    </Col>
+                    <Col xs={7}>
+                      <Form.Control
+                        className="schedules-input"
+                        as="textarea"
+                        name="sintomas"
+                        rows={2}
+                        value={formData.sintomas}
+                        onChange={handleChange}
+                      />
+                    </Col>
+                  </Row>
+                </Col>
 
-                <Row className="mb-3 align-items-center">
-                  <Col xs={4}>
-                    <Form.Label className="schedules-label">Sintomas</Form.Label>
-                  </Col>
-                  <Col xs={7}>
-                    <Form.Control
-                      className="schedules-input"
-                      as="textarea"
-                      rows={2}
-                      {...register('sintomas')}
-                    />
-                  </Col>
-                </Row>
-              </Col>
+                <Col md={6}>
+                  <Row className="mb-3 align-items-center">
+                    <Col xs={4}>
+                      <Form.Label className="schedules-label">Fecha</Form.Label>
+                    </Col>
+                    <Col xs={7}>
+                      <Form.Control
+                        className="schedules-input"
+                        type="date"
+                        name="fecha"
+                        value={formData.fecha}
+                        onChange={handleChange}
+                        required
+                      />
+                    </Col>
+                  </Row>
 
-              <Col md={6}>
-                <Row className="mb-3 align-items-center">
-                  <Col xs={4}>
-                    <Form.Label className="schedules-label">Fecha</Form.Label>
-                  </Col>
-                  <Col xs={7}>
-                    <Form.Control
-                      className="schedules-input"
-                      type="date"
-                      isInvalid={!!errors.fecha}
-                      {...register('fecha', { required: 'Campo requerido' })}
-                    />
-                    <Form.Control.Feedback type="invalid">{errors.fecha?.message}</Form.Control.Feedback>
-                  </Col>
-                </Row>
+                  <Row className="mb-3 align-items-center">
+                    <Col xs={4}>
+                      <Form.Label className="schedules-label">Direccion</Form.Label>
+                    </Col>
+                    <Col xs={7}>
+                      <Form.Control
+                        className="schedules-input"
+                        type="text"
+                        value={clienteActual.direccion}
+                        readOnly
+                      />
+                    </Col>
+                  </Row>
 
-                <Row className="mb-3 align-items-center">
-                  <Col xs={4}>
-                    <Form.Label className="schedules-label">Direccion</Form.Label>
-                  </Col>
-                  <Col xs={7}>
-                    <Form.Control
-                      className="schedules-input"
-                      type="text"
-                      isInvalid={!!errors.direccion}
-                      {...register('direccion', { required: 'Campo requerido' })}
-                    />
-                    <Form.Control.Feedback type="invalid">{errors.direccion?.message}</Form.Control.Feedback>
-                  </Col>
-                </Row>
-
-                <Row className="mb-3 align-items-center">
-                  <Col xs={4}>
-                    <Form.Label className="schedules-label">Telefono</Form.Label>
-                  </Col>
-                  <Col xs={7}>
-                    <Form.Control
-                      className="schedules-input"
-                      type="tel"
-                      placeholder="+56912345678"
-                      isInvalid={!!errors.telefono}
-                      {...register('telefono', { required: 'Campo requerido' })}
-                    />
-                    <Form.Control.Feedback type="invalid">{errors.telefono?.message}</Form.Control.Feedback>
-                  </Col>
-                </Row>
-              </Col>
-            </Row>
+                  <Row className="mb-3 align-items-center">
+                    <Col xs={4}>
+                      <Form.Label className="schedules-label">Telefono</Form.Label>
+                    </Col>
+                    <Col xs={7}>
+                      <Form.Control
+                        className="schedules-input"
+                        type="tel"
+                        value={clienteActual.telefono}
+                        readOnly
+                      />
+                    </Col>
+                  </Row>
+                </Col>
+              </Row>
+            ) : (
+              <p className="schedules-label" style={{ color: 'red' }}>
+                No se encontró tu perfil de cliente. Contacta al administrador.
+              </p>
+            )}
           </div>
 
           {/* Sección médico */}
@@ -166,13 +269,20 @@ function Agendar() {
                 <Form.Label className="schedules-label schedules-label-light">Medico</Form.Label>
               </Col>
               <Col xs={4}>
-                <Form.Control
+                <Form.Select
                   className="schedules-input"
-                  type="text"
-                  isInvalid={!!errors.medico}
-                  {...register('medico', { required: 'Campo requerido' })}
-                />
-                <Form.Control.Feedback type="invalid">{errors.medico?.message}</Form.Control.Feedback>
+                  name="medicoId"
+                  value={formData.medicoId}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="">Seleccionar médico...</option>
+                  {medicos.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.nombre} {m.apellido}
+                    </option>
+                  ))}
+                </Form.Select>
               </Col>
               <Col xs={2}>
                 <Form.Label className="schedules-label schedules-label-light">Especialidad</Form.Label>
@@ -181,10 +291,9 @@ function Agendar() {
                 <Form.Control
                   className="schedules-input"
                   type="text"
-                  isInvalid={!!errors.especialidad}
-                  {...register('especialidad', { required: 'Campo requerido' })}
+                  value={formData.especialidad}
+                  readOnly
                 />
-                <Form.Control.Feedback type="invalid">{errors.especialidad?.message}</Form.Control.Feedback>
               </Col>
             </Row>
 
@@ -193,48 +302,20 @@ function Agendar() {
                 <Form.Label className="schedules-label schedules-label-light">Centro Medico</Form.Label>
               </Col>
               <Col xs={4}>
-                <Form.Control
+                <Form.Select
                   className="schedules-input"
-                  type="text"
-                  isInvalid={!!errors.centroMedico}
-                  {...register('centroMedico', { required: 'Campo requerido' })}
-                />
-                <Form.Control.Feedback type="invalid">{errors.centroMedico?.message}</Form.Control.Feedback>
-              </Col>
-            </Row>
-          </div>
-
-          {/* Sección precio */}
-          <div className="schedules-card schedules-price-row">
-            <Row className="justify-content-end align-items-center">
-              <Col xs="auto">
-                <Form.Label className="schedules-label mb-0">Precio</Form.Label>
-              </Col>
-              <Col xs={3}>
-                <Form.Control
-                  className="schedules-input"
-                  type="number"
-                  min={0}
-                  placeholder="0"
-                  isInvalid={!!errors.precio}
-                  {...register('precio', {
-                    min: { value: 0, message: 'El precio no puede ser negativo' }
-                  })}
-                />
-                <Form.Control.Feedback type="invalid">{errors.precio?.message}</Form.Control.Feedback>
-              </Col>
-              <Col xs="auto">
-                <Form.Label className="schedules-label mb-0">Total:</Form.Label>
-              </Col>
-              <Col xs={3}>
-                <Form.Control
-                  className="schedules-input"
-                  type="number"
-                  min={0}
-                  placeholder="0"
-                  readOnly
-                  {...register('total')}
-                />
+                  name="hospitalId"
+                  value={formData.hospitalId}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="">Seleccionar hospital...</option>
+                  {hospitales.map((h) => (
+                    <option key={h.id} value={h.id}>
+                      {h.nombre}
+                    </option>
+                  ))}
+                </Form.Select>
               </Col>
             </Row>
           </div>
@@ -242,7 +323,13 @@ function Agendar() {
           {/* Botón */}
           <div className="schedules-btn-wrapper">
             <Button className="schedules-btn-outline" href="/">Cancelar</Button>
-            <Button className="schedules-btn-primary" type="submit">Agendar Cita</Button>
+            <Button
+              className="schedules-btn-primary"
+              type="submit"
+              disabled={loadingCliente || !clienteActual}
+            >
+              Agendar Cita
+            </Button>
           </div>
 
         </Form>

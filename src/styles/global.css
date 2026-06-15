@@ -1,0 +1,17 @@
+.input-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.input-error {
+  border: 1.5px solid #e53e3e !important;
+  outline: none;
+}
+
+.error-message {
+  color: #e53e3e;
+  font-size: 0.75rem;
+  margin-top: 4px;
+  margin-left: 2px;
+}
