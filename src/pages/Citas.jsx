@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import '../styles/pages/Citas.css';
 import Cookies from 'js-cookie';
 import CitaService from '../services/CitaService';
+import { useNavigate } from 'react-router-dom'; 
 
 function fmtFecha(f) {
   if (!f) return '—';
@@ -13,6 +14,7 @@ function fmtFecha(f) {
 export default function TusCitas() {
   const [citas, setCitas] = useState([]);
   const [openId, setOpenId] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     CitaService.getAll()
