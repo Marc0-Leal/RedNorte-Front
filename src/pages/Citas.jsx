@@ -1,23 +1,22 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import '../styles/pages/Citas.css';
+import Cookies from 'js-cookie';
+import CitaService from '../services/CitaService';
 
 function fmtFecha(f) {
   if (!f) return '—';
-  const date = new Date(f);
+  const [year, month, day] = f.split('T')[0].split('-');
   const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-  return `${date.getDate()} ${meses[date.getMonth()]} ${date.getFullYear()}`;
+  return `${parseInt(day)} ${meses[parseInt(month) - 1]} ${year}`;
 }
 
 export default function TusCitas() {
   const [citas, setCitas] = useState([]);
   const [openId, setOpenId] = useState(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
-    fetch("https://rednorte-api-gateway-k27o.onrender.com/api/citaMedica")
-      .then(res => res.json())
-      .then(data => setCitas(data))
+    CitaService.getAll()
+      .then(data => setCitas(Array.isArray(data) ? data : []))
       .catch(() => setCitas([]));
   }, []);
 
@@ -90,7 +89,7 @@ export default function TusCitas() {
                       </div>
                       <div className="detail-item detail-item--full">
                         <span className="detail-label">Síntomas</span>
-                        <span className="detail-value">Sin síntomas registrados</span>
+                        <span className="detail-value">{cita.sintomas || 'Sin síntomas registrados'}</span>
                       </div>
                     </div>
 

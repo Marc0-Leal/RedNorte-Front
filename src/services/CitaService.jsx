@@ -13,7 +13,7 @@ const formatDate = (date) => {
 };
 
 const CitaService = {
-  create: async ({ fecha, hora, estado, medico, cliente, pago, listaEspera }) => {
+  create: async ({ fecha, hora, estado, medico, cliente, pago, listaEspera, sintomas }) => {
     try {
       const body = {
         fecha,
@@ -21,8 +21,9 @@ const CitaService = {
         estado,
         medico,
         cliente,
-        pago,
+        pago, 
         listaEspera,
+        sintomas,
       };
       console.log("Cita body enviado:", JSON.stringify(body, null, 2));
       const res = await axios.post(API_URL, body, getAuthHeader());
