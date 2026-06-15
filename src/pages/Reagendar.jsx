@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Container, Row, Col, Form, Button, Alert } from 'react-bootstrap';
 import { useNavigate, useParams } from 'react-router-dom';
+import Cookies from 'js-cookie';
 import '../../src/styles/pages/Agendar-Cita.css';
 
 const API = "https://rednorte-api-gateway-k27o.onrender.com/api/citaMedica";
@@ -13,9 +14,10 @@ function Reagendar() {
   const [reagendada, setReagendada] = useState(false);
   const [cargando, setCargando] = useState(true);
 
-  // Precargar datos de la cita
   useEffect(() => {
-    fetch(`${API}/${id}`)
+    fetch(`${API}/${id}`, {
+      headers: { Authorization: `Bearer ${Cookies.get("token")}` }
+    })
       .then(res => res.json())
       .then(cita => {
         reset({
@@ -41,7 +43,10 @@ function Reagendar() {
     try {
       const res = await fetch(`${API}/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${Cookies.get("token")}`,
+        },
         body: JSON.stringify(data),
       });
       if (!res.ok) throw new Error();
