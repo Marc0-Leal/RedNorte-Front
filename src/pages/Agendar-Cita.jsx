@@ -116,7 +116,8 @@ function Agendar() {
       });
 
       try {
-        await axios.post(
+        console.log("Enviando correo a:", clienteActual.correo);
+        const emailRes = await axios.post(
           "https://rednorte-api-gateway-k27o.onrender.com/api/notificaciones/send-email",
           {
             to: clienteActual.correo,
@@ -125,6 +126,7 @@ function Agendar() {
           },
           { headers: { Authorization: `Bearer ${Cookies.get("token")}` } }
         );
+        console.log("Respuesta correo:", emailRes.data);
       } catch (err) {
         console.warn("No se pudo enviar el correo:", err);
       }
