@@ -4,7 +4,7 @@ import { Container, Row, Col, Form, Button, Alert } from 'react-bootstrap';
 import { useNavigate, useParams } from 'react-router-dom';
 import '../../src/styles/pages/Agendar-Cita.css';
 
-const API = "https://rednorte-api-gateway-k27o.onrender.com/api/clinica/citaMedica";
+const API = "https://rednorte-api-gateway-k27o.onrender.com/api/citaMedica";
 
 function Reagendar() {
   const { id } = useParams();
