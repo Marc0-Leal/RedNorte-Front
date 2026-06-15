@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react';
 import { Container, Row, Col, Form, Button, Alert } from 'react-bootstrap';
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
+import axios from "axios";
 import CitaService from '../services/CitaService';
 import ListaEsperaService from '../services/ListaEsperaService';
 import MedicoService from '../services/MedicoService';
 import HospitalService from '../services/HospitalService';
 import ClienteService from '../services/ClienteService';
 import PagoService from '../services/PagoService';
-import AsignacionService from '../services/AsignacionService';
 import '../../src/styles/pages/Agendar-Cita.css';
 
 
@@ -95,14 +95,14 @@ function Agendar() {
         hospital: hospital,
       });
 
-        // await AsignacionService.create({   // ← comentado temporalmente
-        //   listaEsperaId: listaEspera.id,
-        //   prioridad: "ALTA",
-        //   medicoDisponible: true,
-        //   mismaRegion: true,
-        //   medicoId: Number(formData.medicoId),
-        //   hospitalId: Number(formData.hospitalId),
-        // });
+      // await AsignacionService.create({
+      //   listaEsperaId: listaEspera.id,
+      //   prioridad: "ALTA",
+      //   medicoDisponible: true,
+      //   mismaRegion: true,
+      //   medicoId: Number(formData.medicoId),
+      //   hospitalId: Number(formData.hospitalId),
+      // });
 
       await CitaService.create({
         fecha: formData.fecha,
@@ -115,6 +115,20 @@ function Agendar() {
         sintomas: formData.sintomas,
       });
 
+      try {
+        await axios.post(
+          "https://rednorte-api-gateway-k27o.onrender.com/api/notificaciones/send-email",
+          {
+            to: clienteActual.correo,
+            tipoAviso: "citaConfirmada",
+            fecha: formData.fecha,
+          },
+          { headers: { Authorization: `Bearer ${Cookies.get("token")}` } }
+        );
+      } catch (err) {
+        console.warn("No se pudo enviar el correo:", err);
+      }
+
       setAgendada(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
       setTimeout(() => navigate('/tus-citas'), 2000);
@@ -122,16 +136,6 @@ function Agendar() {
       console.error(err);
       alert('Error al agendar la cita');
     }
-  };
-
-  const blockNegativeKeys = (e) => {
-    if (e.key === '-' || e.key === 'e' || e.key === '+') {
-      e.preventDefault();
-    }
-  };
-
-  const forcePositive = (e) => {
-    if (e.target.value < 0) e.target.value = 0;
   };
 
   return (
