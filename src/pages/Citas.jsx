@@ -25,10 +25,23 @@ export default function TusCitas() {
   const cancelarCita = async (id) => {
     const confirmar = window.confirm('¿Deseas cancelar esta cita?');
     if (!confirmar) return;
-
     try {
+      const cita = citas.find((c) => c.id === id);
       await CitaService.delete(id);
-      setCitas((prev) => prev.filter((cita) => cita.id !== id));
+      setCitas((prev) => prev.filter((c) => c.id !== id));
+      try {
+        await axios.post(
+          "https://rednorte-api-gateway-k27o.onrender.com/api/notificaciones/send-email",
+          {
+            to: cita.cliente.correo,
+            tipoAviso: "citaCancelada",
+            fecha: cita.fecha,
+          },
+          { headers: { Authorization: `Bearer ${Cookies.get("token")}` } }
+        );
+      } catch (emailErr) {
+        console.warn("No se pudo enviar el correo de cancelación:", emailErr);
+      }
     } catch (err) {
       alert('Error al cancelar la cita. Intenta de nuevo.');
     }
