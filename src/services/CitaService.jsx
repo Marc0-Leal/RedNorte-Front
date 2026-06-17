@@ -68,7 +68,7 @@ const CitaService = {
 
   delete: async (id) => {
     try {
-      await axios.delete(`${API_URL}/${id}`);
+      await axios.delete(`${API_URL}/${id}`, getAuthHeader());
       return true;
     } catch (error) {
       console.error(`Error al eliminar cita ${id}:`, error);

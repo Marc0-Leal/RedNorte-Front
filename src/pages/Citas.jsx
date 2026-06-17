@@ -22,11 +22,16 @@ export default function TusCitas() {
       .catch(() => setCitas([]));
   }, []);
 
-  const cancelarCita = (id) => {
-    const updated = citas.map((cita) =>
-      cita.id === id ? { ...cita, estado: 'Expirada' } : cita
-    );
-    setCitas(updated);
+  const cancelarCita = async (id) => {
+    const confirmar = window.confirm('¿Deseas cancelar esta cita?');
+    if (!confirmar) return;
+
+    try {
+      await CitaService.delete(id);
+      setCitas((prev) => prev.filter((cita) => cita.id !== id));
+    } catch (err) {
+      alert('Error al cancelar la cita. Intenta de nuevo.');
+    }
   };
 
   const toggleOpen = (id) => {
