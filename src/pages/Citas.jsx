@@ -35,7 +35,7 @@ export default function TusCitas() {
           "https://rednorte-api-gateway-k27o.onrender.com/api/notificaciones/send-email",
           {
             to: cita.cliente.correo,
-            tipoAviso: "citaCancelada",
+            tipoAviso: "citaEliminada",
             fecha: cita.fecha,
           },
           { headers: { Authorization: `Bearer ${Cookies.get("token")}` } }
