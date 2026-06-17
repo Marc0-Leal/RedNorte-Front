@@ -8,13 +8,13 @@ const getAuthHeader = () => ({
 });
 
 const MedicoService = {
-  getAll: async () => {
+  getByHospital: async (hospitalId) => {
     try {
-      const res = await axios.get(API_URL, getAuthHeader());
+      const res = await axios.get(`${API_URL}/hospital/${hospitalId}`, getAuthHeader());
       return res.data;
     } catch (error) {
-      console.error("Error al obtener médicos:", error);
-      throw error;
+      console.error("Error al obtener médicos por hospital:", error);
+      return [];
     }
   },
 };
