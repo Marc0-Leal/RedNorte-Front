@@ -3,6 +3,8 @@ import '../styles/pages/Citas.css';
 import Cookies from 'js-cookie';
 import CitaService from '../services/CitaService';
 import { useNavigate } from 'react-router-dom'; 
+import axios from 'axios';
+import Cookies from 'js-cookie';
 
 function fmtFecha(f) {
   if (!f) return '—';
