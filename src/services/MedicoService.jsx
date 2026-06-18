@@ -17,6 +17,16 @@ const MedicoService = {
       throw error;
     }
   },
+
+  getByHospital: async (hospitalId) => {
+    try {
+      const res = await axios.get(`${API_URL}/hospital/${hospitalId}`, getAuthHeader());
+      return res.data;
+    } catch (error) {
+      console.error("Error al obtener médicos por hospital:", error);
+      return [];
+    }
+  },
 };
 
 export default MedicoService;

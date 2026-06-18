@@ -3,6 +3,7 @@ import '../styles/pages/Citas.css';
 import Cookies from 'js-cookie';
 import CitaService from '../services/CitaService';
 import { useNavigate } from 'react-router-dom'; 
+import axios from 'axios';
 
 function fmtFecha(f) {
   if (!f) return '—';
@@ -22,11 +23,29 @@ export default function TusCitas() {
       .catch(() => setCitas([]));
   }, []);
 
-  const cancelarCita = (id) => {
-    const updated = citas.map((cita) =>
-      cita.id === id ? { ...cita, estado: 'Expirada' } : cita
-    );
-    setCitas(updated);
+  const cancelarCita = async (id) => {
+    const confirmar = window.confirm('¿Deseas cancelar esta cita?');
+    if (!confirmar) return;
+    try {
+      const cita = citas.find((c) => c.id === id);
+      await CitaService.delete(id);
+      setCitas((prev) => prev.filter((c) => c.id !== id));
+      try {
+        await axios.post(
+          "https://rednorte-api-gateway-k27o.onrender.com/api/notificaciones/send-email",
+          {
+            to: cita.cliente.correo,
+            tipoAviso: "citaEliminada",
+            fecha: cita.fecha,
+          },
+          { headers: { Authorization: `Bearer ${Cookies.get("token")}` } }
+        );
+      } catch (emailErr) {
+        console.warn("No se pudo enviar el correo de cancelación:", emailErr);
+      }
+    } catch (err) {
+      alert('Error al cancelar la cita. Intenta de nuevo.');
+    }
   };
 
   const toggleOpen = (id) => {
