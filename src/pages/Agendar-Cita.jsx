@@ -1,351 +1,241 @@
-import { useState, useEffect } from 'react';
-import { Container, Row, Col, Form, Button, Alert } from 'react-bootstrap';
-import { useNavigate } from "react-router-dom";
-import Cookies from "js-cookie";
-import axios from "axios";
-import CitaService from '../services/CitaService';
-import MedicoService from '../services/MedicoService';
-import HospitalService from '../services/HospitalService';
-import ClienteService from '../services/ClienteService';
-import '../../src/styles/pages/Agendar-Cita.css';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import Cookies from 'js-cookie';
+import { CitaService } from '../services/CitaService'; // Asegúrate de que la ruta coincida con tu proyecto
 
-
-function Agendar() {
+export default function AgendarCita() {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    sintomas: '',
-    fecha: '',
-    medicoId: '',
-    especialidad: '',
-    hospitalId: '',
-  });
-  const [medicos, setMedicos] = useState([]);
   const [hospitales, setHospitales] = useState([]);
-  const [agendada, setAgendada] = useState(false);
+  const [medicos, setMedicos] = useState([]);
   const [clienteActual, setClienteActual] = useState(null);
-  const [loadingCliente, setLoadingCliente] = useState(true);
+  const [agendada, setAgendada] = useState(false);
 
-  // Cargar hospitales al montar
-  useEffect(() => {
-    HospitalService.getAll().then(setHospitales).catch(console.error);
-  }, []);
+  const [formData, setFormData] = useState({
+    hospitalId: '',
+    medicoId: '',
+    fecha: '',
+    sintomas: ''
+  });
 
-  // Cargar médicos cuando cambia el hospital
+  // 1. Cargar datos iniciales (Cliente logueado y Hospitales)
   useEffect(() => {
-    if (formData.hospitalId) {
-      MedicoService.getByHospital(Number(formData.hospitalId))
-        .then(setMedicos)
-        .catch(console.error);
-    } else {
-      setMedicos([]);
+    const token = Cookies.get('token');
+    if (!token) {
+      alert('Debes iniciar sesión para agendar una cita.');
+      navigate('/login');
+      return;
     }
+
+    // Obtener los datos del cliente actual usando el token
+    axios.get('https://rednorte-api-gateway-k27o.onrender.com/api/cliente/perfil', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    .then(res => {
+      // Si la API retorna una lista, buscamos el cliente. Si retorna el objeto directo, lo asignamos.
+      if (Array.isArray(res.data)) {
+        setClienteActual(res.data[0]); 
+      } else {
+        setClienteActual(res.data);
+      }
+    })
+    .catch(err => console.error('Error obteniendo perfil del cliente:', err));
+
+    // Cargar la lista de centros médicos (hospitales)
+    axios.get('https://rednorte-api-gateway-k27o.onrender.com/api/hospital', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    .then(res => setHospitales(res.data))
+    .catch(err => console.error('Error cargando centros médicos:', err));
+  }, [navigate]);
+
+  // 2. Cargar médicos cuando se seleccione un hospital
+  useEffect(() => {
+    if (!formData.hospitalId) {
+      setMedicos([]);
+      return;
+    }
+    const token = Cookies.get('token');
+    axios.get(`https://rednorte-api-gateway-k27o.onrender.com/api/medico/hospital/${formData.hospitalId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    .then(res => setMedicos(res.data))
+    .catch(err => console.error('Error cargando médicos:', err));
   }, [formData.hospitalId]);
 
-  // Cargar cliente actual
-  useEffect(() => {
-    const fetchCliente = async () => {
-      try {
-        const rutUsuario = Cookies.get("rut");
-        if (!rutUsuario) {
-          alert('Debes iniciar sesión para agendar una cita');
-          navigate('/LogIn');
-          return;
-        }
-
-        const cliente = await ClienteService.getByRut(rutUsuario);
-        if (!cliente) {
-          alert('No se encontró tu perfil de cliente. Contacta al administrador.');
-          return;
-        }
-
-        setClienteActual(cliente);
-      } catch (err) {
-        console.error('Error al obtener cliente:', err);
-      } finally {
-        setLoadingCliente(false);
-      }
-    };
-
-    fetchCliente();
-  }, []);
-
   const handleChange = (e) => {
-    const { name, value } = e.target;
-
-    if (name === 'hospitalId') {
-      setFormData((prev) => ({
-        ...prev,
-        hospitalId: value,
-        medicoId: '',
-        especialidad: '',
-      }));
-      return;
-    }
-
-    if (name === 'medicoId') {
-      const selected = medicos.find(m => m.id === Number(value));
-      setFormData((prev) => ({
-        ...prev,
-        medicoId: value,
-        especialidad: selected ? selected.especialidad : '',
-      }));
-      return;
-    }
-
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
   };
 
+  // 3. Envío del Formulario con la solución para los campos estrictos de la Base de Datos
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!clienteActual) {
-      alert('No se pudo identificar tu perfil de cliente.');
+      alert('No se pudo identificar tu perfil de cliente de forma correcta.');
       return;
     }
     
     try {
+      const token = Cookies.get('token');
 
+      // PASO A: Creamos el pago puente de $0 para evadir la restricción 'NOT NULL' en Render
+      console.log("Creando pago puente para la base de datos...");
+      const pagoRes = await axios.post(
+        "https://rednorte-api-gateway-k27o.onrender.com/api/pago",
+        {
+          monto: 0,
+          fecha_pago: formData.fecha || new Date().toISOString().split('T')[0],
+          metodo_pago: "efectivo",
+          estado: "pendiente"
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      const nuevoPagoId = pagoRes.data.id;
+      console.log("Pago puente creado con éxito. ID:", nuevoPagoId);
+
+      // PASO B: Enviamos la Cita Médica completa cumpliendo todas las restricciones SQL
+      console.log("Enviando cita médica al backend...");
       await CitaService.create({
         fecha: formData.fecha,
-        hora: 9, 
+        hora: 9, // Hora fija (9:00 AM) para cumplir con el 'hora NOT NULL' en la BD
         estado: "Activa",
         medico: { id: Number(formData.medicoId) },
         cliente: { id: Number(clienteActual.id) },
         sintomas: formData.sintomas,
-        pago: null,
-        listaEspera: null
+        pago: { id: Number(nuevoPagoId) }, // Vinculamos el pago que acabamos de crear
+        listaEspera: null // Se deja null ya que los logs confirmaron que sí acepta nulos
       });
 
-
+      // PASO C: Envío opcional de notificación por correo electrónico
       try {
-        console.log("Enviando correo a:", clienteActual.correo);
-        const emailRes = await axios.post(
+        console.log("Enviando correo de confirmación a:", clienteActual.correo);
+        await axios.post(
           "https://rednorte-api-gateway-k27o.onrender.com/api/notificaciones/send-email",
           {
             to: clienteActual.correo,
             tipoAviso: "citaConfirmada",
             fecha: formData.fecha,
           },
-          { headers: { Authorization: `Bearer ${Cookies.get("token")}` } }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
-        console.log("Respuesta correo:", emailRes.data);
       } catch (err) {
-        console.warn("No se pudo enviar el correo:", err);
+        console.warn("No se pudo procesar el envío del correo electrónico:", err);
       }
 
+      // Todo salió correcto
       setAgendada(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      
+      // Redirección tras 2 segundos de éxito
       setTimeout(() => navigate('/tus-citas'), 2000);
+
     } catch (err) {
       console.error("Error detallado al agendar:", err);
-      alert('Error al agendar la cita. Revisa la consola para más detalles.');
+      alert('Ocurrió un error al intentar agendar la cita. Revisa los detalles en la consola del navegador.');
     }
   };
 
   return (
-    <div className="schedules-page">
-
+    <div style={{ maxWidth: '600px', margin: '40px auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}>
       {agendada && (
-        <div className="schedules-alert-wrapper">
-          <Alert className="schedules-alert" onClose={() => setAgendada(false)} dismissible>
-            ¡Cita agendada exitosamente!
-          </Alert>
+        <div style={{ backgroundColor: '#d4edda', color: '#155724', padding: '15px', borderRadius: '5px', marginBottom: '20px', textAlign: 'center', fontWeight: 'bold' }}>
+          ¡Cita agendada con éxito! Redireccionando a tus citas...
         </div>
       )}
 
-      <div className="schedules-hero">
-        <h1 className="schedules-hero-title">Agendar Cita</h1>
-        <p className="schedules-hero-sub">Completa el formulario para reservar tu atención médica</p>
-      </div>
+      <h2 style={{ textAlign: 'center', color: '#333', marginBottom: '30px' }}>Agendar Cita Médica</h2>
+      
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        
+        {/* Campo Datos Personales (Lectura) */}
+        <div>
+          <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>Tus Datos Personales:</label>
+          <input 
+            type="text" 
+            value={clienteActual ? `${clienteActual.nombre} ${clienteActual.apellido || ''} (RUT: ${clienteActual.rut || 'No Registrado'})` : 'Cargando tus datos...'} 
+            disabled 
+            style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc', backgroundColor: '#f9f9f9' }}
+          />
+        </div>
 
-      <Container className="schedules-container">
-        <Form noValidate onSubmit={handleSubmit}>
+        {/* Selector de Centro Médico */}
+        <div>
+          <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>Centro Médico:</label>
+          <select 
+            name="hospitalId" 
+            value={formData.hospitalId} 
+            onChange={handleChange}
+            required
+            style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
+          >
+            <option value="">Selecciona un centro médico</option>
+            {hospitales.map(h => (
+              <option key={h.id} value={h.id}>{h.nombre}</option>
+            ))}
+          </select>
+        </div>
 
-          {/* Sección datos del paciente */}
-          <div className="schedules-card">
-            <h2 className="schedules-section-title">Datos del Paciente</h2>
+        {/* Selector de Médico Especialista */}
+        <div>
+          <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>Médico Especialista:</label>
+          <select 
+            name="medicoId" 
+            value={formData.medicoId} 
+            onChange={handleChange}
+            required
+            disabled={!formData.hospitalId}
+            style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
+          >
+            <option value="">{formData.hospitalId ? "Selecciona un médico" : "Primero elige un centro médico"}</option>
+            {medicos.map(m => (
+              <option key={m.id} value={m.id}>{m.nombre} {m.apellido} ({m.especialidad || 'General'})</option>
+            ))}
+          </select>
+        </div>
 
-            {loadingCliente ? (
-              <p className="schedules-label">Cargando datos del paciente...</p>
-            ) : clienteActual ? (
-              <Row>
-                <Col md={6}>
-                  <Row className="mb-3 align-items-center">
-                    <Col xs={4}>
-                      <Form.Label className="schedules-label">Paciente</Form.Label>
-                    </Col>
-                    <Col xs={7}>
-                      <Form.Control
-                        className="schedules-input"
-                        type="text"
-                        value={`${clienteActual.nombre} ${clienteActual.apellido}`}
-                        readOnly
-                      />
-                    </Col>
-                  </Row>
+        {/* Selector de Fecha */}
+        <div>
+          <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>Fecha de la Cita:</label>
+          <input 
+            type="date" 
+            name="fecha" 
+            value={formData.fecha} 
+            onChange={handleChange}
+            required
+            min={new Date().toISOString().split('T')[0]} // Evita elegir fechas del pasado
+            style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
+          />
+        </div>
 
-                  <Row className="mb-3 align-items-center">
-                    <Col xs={4}>
-                      <Form.Label className="schedules-label">Rut</Form.Label>
-                    </Col>
-                    <Col xs={7}>
-                      <Form.Control
-                        className="schedules-input"
-                        type="text"
-                        value={clienteActual.rut}
-                        readOnly
-                      />
-                    </Col>
-                  </Row>
+        {/* Área de Síntomas */}
+        <div>
+          <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>Síntomas o Motivo de Consulta:</label>
+          <textarea 
+            name="sintomas" 
+            value={formData.sintomas} 
+            onChange={handleChange}
+            required
+            placeholder="Describe brevemente cómo te sientes..."
+            rows="4"
+            style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc', resize: 'vertical' }}
+          />
+        </div>
 
-                  <Row className="mb-3 align-items-center">
-                    <Col xs={4}>
-                      <Form.Label className="schedules-label">Sintomas</Form.Label>
-                    </Col>
-                    <Col xs={7}>
-                      <Form.Control
-                        className="schedules-input"
-                        as="textarea"
-                        name="sintomas"
-                        rows={2}
-                        value={formData.sintomas}
-                        onChange={handleChange}
-                      />
-                    </Col>
-                  </Row>
-                </Col>
-
-                <Col md={6}>
-                  <Row className="mb-3 align-items-center">
-                    <Col xs={4}>
-                      <Form.Label className="schedules-label">Fecha</Form.Label>
-                    </Col>
-                    <Col xs={7}>
-                      <Form.Control
-                        className="schedules-input"
-                        type="date"
-                        name="fecha"
-                        value={formData.fecha}
-                        onChange={handleChange}
-                        required
-                      />
-                    </Col>
-                  </Row>
-
-                  <Row className="mb-3 align-items-center">
-                    <Col xs={4}>
-                      <Form.Label className="schedules-label">Direccion</Form.Label>
-                    </Col>
-                    <Col xs={7}>
-                      <Form.Control
-                        className="schedules-input"
-                        type="text"
-                        value={clienteActual.direccion}
-                        readOnly
-                      />
-                    </Col>
-                  </Row>
-
-                  <Row className="mb-3 align-items-center">
-                    <Col xs={4}>
-                      <Form.Label className="schedules-label">Telefono</Form.Label>
-                    </Col>
-                    <Col xs={7}>
-                      <Form.Control
-                        className="schedules-input"
-                        type="tel"
-                        value={clienteActual.telefono}
-                        readOnly
-                      />
-                    </Col>
-                  </Row>
-                </Col>
-              </Row>
-            ) : (
-              <p className="schedules-label" style={{ color: 'red' }}>
-                No se encontró tu perfil de cliente. Contacta al administrador.
-              </p>
-            )}
-          </div>
-
-          {/* Sección médico */}
-          <div className="schedules-card schedules-card-dark">
-            <h2 className="schedules-section-title schedules-section-title-light">Datos Médicos</h2>
-
-            <Row className="mb-3 align-items-center">
-              <Col xs={2}>
-                <Form.Label className="schedules-label schedules-label-light">Centro Medico</Form.Label>
-              </Col>
-              <Col xs={4}>
-                <Form.Select
-                  className="schedules-input"
-                  name="hospitalId"
-                  value={formData.hospitalId}
-                  onChange={handleChange}
-                  required
-                >
-                  <option value="">Seleccionar hospital...</option>
-                  {hospitales.map((h) => (
-                    <option key={h.id} value={h.id}>
-                      {h.nombre}
-                    </option>
-                  ))}
-                </Form.Select>
-              </Col>
-            </Row>
-
-            <Row className="mb-3 align-items-center">
-              <Col xs={2}>
-                <Form.Label className="schedules-label schedules-label-light">Medico</Form.Label>
-              </Col>
-              <Col xs={4}>
-                <Form.Select
-                  className="schedules-input"
-                  name="medicoId"
-                  value={formData.medicoId}
-                  onChange={handleChange}
-                  required
-                  disabled={!formData.hospitalId}
-                >
-                  <option value="">
-                    {formData.hospitalId ? 'Seleccionar médico...' : 'Primero selecciona un hospital'}
-                  </option>
-                  {medicos.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.nombre} {m.apellido}
-                    </option>
-                  ))}
-                </Form.Select>
-              </Col>
-              <Col xs={2}>
-                <Form.Label className="schedules-label schedules-label-light">Especialidad</Form.Label>
-              </Col>
-              <Col xs={4}>
-                <Form.Control
-                  className="schedules-input"
-                  type="text"
-                  value={formData.especialidad}
-                  readOnly
-                />
-              </Col>
-            </Row>
-          </div>
-
-          {/* Botones */}
-          <div className="schedules-btn-wrapper">
-            <Button className="schedules-btn-outline" href="/">Cancelar</Button>
-            <Button
-              className="schedules-btn-primary"
-              type="submit"
-              disabled={loadingCliente || !clienteActual}
-            >
-              Agendar Cita
-            </Button>
-          </div>
-
-        </Form>
-      </Container>
+        {/* Botón de Envío */}
+        <button 
+          type="submit" 
+          disabled={agendada || !clienteActual}
+          style={{ width: '100%', padding: '12px', borderRadius: '4px', border: 'none', backgroundColor: '#007bff', color: '#fff', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', transition: 'background 0.2s' }}
+          onMouseOver={(e) => e.target.style.backgroundColor = '#0056b3'}
+          onMouseOut={(e) => e.target.style.backgroundColor = '#007bff'}
+        >
+          {agendada ? 'Procesando...' : 'Agendar Cita'}
+        </button>
+      </form>
     </div>
   );
 }
-
-export default Agendar;
