@@ -81,7 +81,7 @@ export default function TusCitas() {
                   </div>
 
                   <div className="col acciones" onClick={(e) => e.stopPropagation()}>
-                    <button className={`btn ${activa ? 'btn-verde' : 'btn-deshabilitado'}`} disabled={!activa} onClick={() =>navigate(`/reagendar/${cita.id}`)}>Reagendar</button>
+                    <button className={`btn ${activa ? 'btn-verde' : 'btn-deshabilitado'}`} disabled={!activa} onClick={() => navigate(`/reagendar/${cita.id}`)}>Reagendar</button>
                     <button className={`btn ${activa ? 'btn-rojo' : 'btn-deshabilitado'}`} disabled={!activa} onClick={() => cancelarCita(cita.id)}>Cancelar</button>
                   </div>
 
@@ -126,7 +126,7 @@ export default function TusCitas() {
                       </div>
                       <div className="detail-item detail-item--full">
                         <span className="detail-label">Centro médico</span>
-                        <span className="detail-value">—</span>
+                        <span className="detail-value">{cita.listaEspera?.hospital?.nombre || '—'}</span>
                       </div>
                     </div>
                   </div>
