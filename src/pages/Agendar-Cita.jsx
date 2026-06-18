@@ -103,16 +103,15 @@ function Agendar() {
     }
     
     try {
-      // Enviamos directamente la Cita médica. Pago y Lista de espera van como null.
+      // Enviamos SOLO lo que la interfaz de usuario realmente maneja
       await CitaService.create({
         fecha: formData.fecha,
-        hora: 0, 
         estado: "Activa",
         medico: { id: Number(formData.medicoId) },
         cliente: { id: Number(clienteActual.id) },
-        pago: null,
-        listaEspera: null,
         sintomas: formData.sintomas,
+        pago: null,
+        listaEspera: null
       });
 
       // Envío de notificaciones por correo
