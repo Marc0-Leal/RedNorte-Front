@@ -4,6 +4,7 @@ import "./../styles/pages/Admin.css";
 import { useEffect, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
+import GraficoCitas from "../components/GraficoCitas";
 
 
 export default function AdminDashboard() {
@@ -97,6 +98,9 @@ useEffect(() => {
           </div>
 
         </section>
+
+        {/* GRAFICO DE CITAS */}
+        <GraficoCitas />
 
         {/* TABLA */}
         <section className="table-section">
