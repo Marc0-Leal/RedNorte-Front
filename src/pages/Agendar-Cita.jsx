@@ -17,7 +17,7 @@ export default function AgendarCita() {
     sintomas: ''
   });
 
-  // 1. Cargar datos iniciales (Tu lógica original de perfil y hospitales)
+  // 1. Cargar datos iniciales
   useEffect(() => {
     const token = Cookies.get('token');
     if (!token) {
@@ -66,7 +66,7 @@ export default function AgendarCita() {
     });
   };
 
-  // 3. Envío del Formulario con el parche funcional para la Base de Datos de Render
+  // 3. Envío del Formulario
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!clienteActual) {
@@ -77,7 +77,7 @@ export default function AgendarCita() {
     try {
       const token = Cookies.get('token');
 
-      // PASO A: Crear el pago puente de $0 requerido por el NOT NULL de Render
+      // PASO A: Crear el pago puente
       console.log("Creando pago puente para la base de datos...");
       const pagoRes = await axios.post(
         "https://rednorte-api-gateway-k27o.onrender.com/api/pago",
@@ -93,16 +93,16 @@ export default function AgendarCita() {
       const nuevoPagoId = pagoRes.data.id;
       console.log("Pago puente creado con éxito. ID:", nuevoPagoId);
 
-      // PASO B: Crear la Cita enlazando la hora por defecto y el ID del pago
+      // PASO B: Crear la Cita
       console.log("Enviando cita médica al backend...");
       await CitaService.create({
         fecha: formData.fecha,
-        hora: 9, // Cumple con la restricción 'hora NOT NULL'
+        hora: 9, 
         estado: "Activa",
         medico: { id: Number(formData.medicoId) },
         cliente: { id: Number(clienteActual.id) },
         sintomas: formData.sintomas,
-        pago: { id: Number(nuevoPagoId) }, // Enlazamos el pago creado arriba
+        pago: { id: Number(nuevoPagoId) }, 
         listaEspera: null
       });
 
@@ -130,7 +130,6 @@ export default function AgendarCita() {
     }
   };
 
-  // TU DISEÑO ORIGINAL EXACTO (Estilo caja gris de tu captura de pantalla)
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh', backgroundColor: '#f4f4f9', padding: '20px' }}>
       <div style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '8px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)', width: '100%', maxWidth: '500px' }}>
@@ -197,7 +196,7 @@ export default function AgendarCita() {
 
           <button
             type="submit"
-            style={{ width: '100%', padding: '12px', border: 'none', borderRadius: '4px', backgroundColor: '#007bff', color: '#white', color: '#fff', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', marginTop: '10px' }}
+            style={{ width: '100%', padding: '12px', border: 'none', borderRadius: '4px', backgroundColor: '#007bff', color: '#fff', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', marginTop: '10px' }}
           >
             Agendar Cita
           </button>
