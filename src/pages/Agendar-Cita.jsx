@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import { CitaService } from '../services/CitaService'; // Asegúrate de que la ruta coincida con tu proyecto
+import CitaService from '../services/CitaService';
 
 export default function AgendarCita() {
   const navigate = useNavigate();
