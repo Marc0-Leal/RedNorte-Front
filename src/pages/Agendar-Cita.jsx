@@ -103,9 +103,10 @@ function Agendar() {
     }
     
     try {
-      // Enviamos SOLO lo que la interfaz de usuario realmente maneja
+
       await CitaService.create({
         fecha: formData.fecha,
+        hora: 9, 
         estado: "Activa",
         medico: { id: Number(formData.medicoId) },
         cliente: { id: Number(clienteActual.id) },
@@ -114,7 +115,7 @@ function Agendar() {
         listaEspera: null
       });
 
-      // Envío de notificaciones por correo
+
       try {
         console.log("Enviando correo a:", clienteActual.correo);
         const emailRes = await axios.post(
