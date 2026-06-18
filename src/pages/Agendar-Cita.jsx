@@ -106,30 +106,43 @@ function Agendar() {
       return;
     }
     try {
-      const pago = await PagoService.create({
+      // 1. Creamos el pago y capturamos la respuesta de la API
+      const pagoResponse = await PagoService.create({
         monto: 0,
         metodo_pago: "efectivo",
         estado: "pendiente",
       });
+      const pagoReal = pagoResponse.data ? pagoResponse.data : pagoResponse;
 
+      // 2. Obtenemos el hospital
       const hospital = await HospitalService.getById(Number(formData.hospitalId));
-      const listaEspera = await ListaEsperaService.create({
+      
+      // 3. Creamos la lista de espera y capturamos la respuesta
+      const listaEsperaResponse = await ListaEsperaService.create({
         fecha_solitud: formData.fecha,
         prioridad: "Normal",
         hospital: hospital,
       });
+      const listaEsperaReal = listaEsperaResponse.data ? listaEsperaResponse.data : listaEsperaResponse;
 
+      // VALIDACIÓN DE SEGURIDAD: Evita enviar valores nulos o indefinidos
+      if (!pagoReal?.id || !listaEsperaReal?.id) {
+        throw new Error(`IDs inválidos obtenidos de la API. Pago ID: ${pagoReal?.id}, ListaEspera ID: ${listaEsperaReal?.id}`);
+      }
+
+      // 4. Creamos la cita con los tipos exactos que pide CitaMedica.java (hora es un Integer)
       await CitaService.create({
         fecha: formData.fecha,
-        hora: 0,
+        hora: 0, // En entero puro, calza perfecto con el "private Integer hora" en Java
         estado: "Activa",
         medico: { id: Number(formData.medicoId) },
-        cliente: { id: clienteActual.id },
-        pago: { id: pago.id },
-        listaEspera: { id: listaEspera.id },
+        cliente: { id: Number(clienteActual.id) },
+        pago: { id: Number(pagoReal.id) },
+        listaEspera: { id: Number(listaEsperaReal.id) },
         sintomas: formData.sintomas,
       });
 
+      // 5. Envío de notificaciones por correo
       try {
         console.log("Enviando correo a:", clienteActual.correo);
         const emailRes = await axios.post(
@@ -150,8 +163,8 @@ function Agendar() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       setTimeout(() => navigate('/tus-citas'), 2000);
     } catch (err) {
-      console.error(err);
-      alert('Error al agendar la cita');
+      console.error("Error detallado al agendar:", err);
+      alert('Error al agendar la cita. Revisa la consola para más detalles.');
     }
   };
 
@@ -344,7 +357,7 @@ function Agendar() {
             </Row>
           </div>
 
-          {/* Botón */}
+          {/* Botones */}
           <div className="schedules-btn-wrapper">
             <Button className="schedules-btn-outline" href="/">Cancelar</Button>
             <Button
