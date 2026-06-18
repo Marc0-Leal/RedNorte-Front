@@ -4,11 +4,9 @@ import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import axios from "axios";
 import CitaService from '../services/CitaService';
-import ListaEsperaService from '../services/ListaEsperaService';
 import MedicoService from '../services/MedicoService';
 import HospitalService from '../services/HospitalService';
 import ClienteService from '../services/ClienteService';
-import PagoService from '../services/PagoService';
 import '../../src/styles/pages/Agendar-Cita.css';
 
 
@@ -74,7 +72,6 @@ function Agendar() {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    // Al cambiar hospital, limpiar médico y especialidad
     if (name === 'hospitalId') {
       setFormData((prev) => ({
         ...prev,
@@ -85,7 +82,6 @@ function Agendar() {
       return;
     }
 
-    // Al cambiar médico, autocompletar especialidad
     if (name === 'medicoId') {
       const selected = medicos.find(m => m.id === Number(value));
       setFormData((prev) => ({
@@ -105,44 +101,21 @@ function Agendar() {
       alert('No se pudo identificar tu perfil de cliente.');
       return;
     }
+    
     try {
-      // 1. Creamos el pago y capturamos la respuesta de la API
-      const pagoResponse = await PagoService.create({
-        monto: 0,
-        metodo_pago: "efectivo",
-        estado: "pendiente",
-      });
-      const pagoReal = pagoResponse.data ? pagoResponse.data : pagoResponse;
-
-      // 2. Obtenemos el hospital
-      const hospital = await HospitalService.getById(Number(formData.hospitalId));
-      
-      // 3. Creamos la lista de espera y capturamos la respuesta
-      const listaEsperaResponse = await ListaEsperaService.create({
-        fecha_solitud: formData.fecha,
-        prioridad: "Normal",
-        hospital: hospital,
-      });
-      const listaEsperaReal = listaEsperaResponse.data ? listaEsperaResponse.data : listaEsperaResponse;
-
-      // VALIDACIÓN DE SEGURIDAD: Evita enviar valores nulos o indefinidos
-      if (!pagoReal?.id || !listaEsperaReal?.id) {
-        throw new Error(`IDs inválidos obtenidos de la API. Pago ID: ${pagoReal?.id}, ListaEspera ID: ${listaEsperaReal?.id}`);
-      }
-
-      // 4. Creamos la cita con los tipos exactos que pide CitaMedica.java (hora es un Integer)
+      // Enviamos directamente la Cita médica. Pago y Lista de espera van como null.
       await CitaService.create({
         fecha: formData.fecha,
-        hora: 0, // En entero puro, calza perfecto con el "private Integer hora" en Java
+        hora: 0, 
         estado: "Activa",
         medico: { id: Number(formData.medicoId) },
         cliente: { id: Number(clienteActual.id) },
-        pago: { id: Number(pagoReal.id) },
-        listaEspera: { id: Number(listaEsperaReal.id) },
+        pago: null,
+        listaEspera: null,
         sintomas: formData.sintomas,
       });
 
-      // 5. Envío de notificaciones por correo
+      // Envío de notificaciones por correo
       try {
         console.log("Enviando correo a:", clienteActual.correo);
         const emailRes = await axios.post(
