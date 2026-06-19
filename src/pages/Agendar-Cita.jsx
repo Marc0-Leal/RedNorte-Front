@@ -98,14 +98,14 @@ function Agendar() {
 
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
-
+    let nuevoPagoId = null;
+    
     const handleSubmit = async (e) => {
     e.preventDefault();
     if (!clienteActual) {
       alert('No se pudo identificar tu perfil de cliente.');
       return;
 
-      let nuevoPagoId = null;
     }
 
     try {
