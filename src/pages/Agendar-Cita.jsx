@@ -98,28 +98,20 @@ function Agendar() {
 
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
-    let nuevoPagoId = null;
 
-    const handleSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!clienteActual) {
       alert('No se pudo identificar tu perfil de cliente.');
       return;
-
     }
-
     try {
-      console.log("Enviando pago puente al backend...");
       const pago = await PagoService.create({
         monto: 0,
         metodo_pago: "efectivo",
         estado: "pendiente",
       });
 
-
-      if (pago && pago.id) {
-        nuevoPagoId = pago.id;
-      }
       const hospital = await HospitalService.getById(Number(formData.hospitalId));
       const listaEspera = await ListaEsperaService.create({
         fecha_solitud: formData.fecha,
@@ -127,21 +119,17 @@ function Agendar() {
         hospital: hospital,
       });
 
-
-// CORRECCIÓN 2: Enlazar los datos enviando IDs planos según requiere Spring Boot
-      console.log("Enviando cita médica al backend con Pago ID:", nuevoPagoId);
       await CitaService.create({
         fecha: formData.fecha,
-        hora: 9, 
+        hora: 0,
         estado: "Activa",
-        medico: Number(formData.medicoId),  // ID directo como número
-        cliente: Number(clienteActual.id),  // ID directo como número
-        sintomas: formData.sintomas,
-        pago: nuevoPagoId ? Number(nuevoPagoId) : null, // ID mapeado sin romper el scope
+        medico: { id: Number(formData.medicoId) },
+        cliente: { id: clienteActual.id },
+        pago: { id: pago.id },
         listaEspera: { id: listaEspera.id },
+        sintomas: formData.sintomas,
       });
 
-// Bloque de notificaciones por correo
       try {
         console.log("Enviando correo a:", clienteActual.correo);
         const emailRes = await axios.post(
