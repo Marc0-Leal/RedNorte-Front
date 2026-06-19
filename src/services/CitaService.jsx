@@ -46,6 +46,17 @@ const CitaService = {
     }
   },
 
+    getByCliente: async (clienteId) => {  
+    try {
+      const res = await axios.get(`${API_URL}/cliente/${clienteId}`, getAuthHeader());
+      return res.data;
+    } catch (error) {
+      if (error.response?.status === 204) return [];
+      console.error("Error al obtener citas del cliente:", error);
+      throw error;
+    }
+  },
+
   getById: async (id) => {
     try {
       const res = await axios.get(`${API_URL}/${id}`, getAuthHeader());
@@ -76,5 +87,4 @@ const CitaService = {
     }
   },
 };
-
 export default CitaService;

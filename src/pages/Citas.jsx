@@ -1,7 +1,9 @@
+
 import { useEffect, useState } from 'react';
 import '../styles/pages/Citas.css';
 import Cookies from 'js-cookie';
 import CitaService from '../services/CitaService';
+import ClienteService from '../services/ClienteService';
 import { useNavigate } from 'react-router-dom'; 
 import axios from 'axios';
 
@@ -15,12 +17,32 @@ function fmtFecha(f) {
 export default function TusCitas() {
   const [citas, setCitas] = useState([]);
   const [openId, setOpenId] = useState(null);
+  const [clienteActual, setClienteActual] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    CitaService.getAll()
-      .then(data => setCitas(Array.isArray(data) ? data : []))
-      .catch(() => setCitas([]));
+    const fetchCitas = async () => {
+      try {
+        const rut = Cookies.get("rut");
+        if (!rut) {
+          navigate('/LogIn');
+          return;
+        }
+
+        const cliente = await ClienteService.getByRut(rut);
+        if (!cliente) return;
+
+        setClienteActual(cliente);
+
+        const misCitas = await CitaService.getByCliente(cliente.id);
+        setCitas(Array.isArray(misCitas) ? misCitas : []);
+      } catch (err) {
+        console.error('Error al cargar citas:', err);
+        setCitas([]);
+      }
+    };
+
+    fetchCitas();
   }, []);
 
   const cancelarCita = async (id) => {
