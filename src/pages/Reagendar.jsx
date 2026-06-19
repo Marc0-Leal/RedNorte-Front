@@ -4,7 +4,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Cookies from 'js-cookie';
 import MedicoService from '../services/MedicoService';
 import HospitalService from '../services/HospitalService';
-import CitaService from '../services/CitaService';
 import '../../src/styles/pages/Agendar-Cita.css';
 
 const API = "https://rednorte-api-gateway-k27o.onrender.com/api/citaMedica";
@@ -20,19 +19,27 @@ function Reagendar() {
     especialidad: '',
     hospitalId: '',
   });
+  const [fechaOriginal, setFechaOriginal] = useState('');
   const [clienteActual, setClienteActual] = useState(null);
   const [medicos, setMedicos] = useState([]);
   const [hospitales, setHospitales] = useState([]);
   const [reagendada, setReagendada] = useState(false);
   const [cargando, setCargando] = useState(true);
 
-  // Cargar médicos y hospitales
   useEffect(() => {
-    MedicoService.getAll().then(setMedicos).catch(console.error);
     HospitalService.getAll().then(setHospitales).catch(console.error);
   }, []);
 
-  // Precargar datos de la cita
+  useEffect(() => {
+    if (formData.hospitalId) {
+      MedicoService.getByHospital(Number(formData.hospitalId))
+        .then(setMedicos)
+        .catch(console.error);
+    } else {
+      setMedicos([]);
+    }
+  }, [formData.hospitalId]);
+
   useEffect(() => {
     fetch(`${API}/${id}`, {
       headers: { Authorization: `Bearer ${Cookies.get("token")}` }
@@ -40,9 +47,11 @@ function Reagendar() {
       .then(res => res.json())
       .then(cita => {
         setClienteActual(cita.cliente);
+        const fecha = cita.fecha?.slice(0, 10) ?? '';
+        setFechaOriginal(fecha);
         setFormData({
           sintomas:     cita.sintomas ?? '',
-          fecha:        cita.fecha?.slice(0, 10) ?? '',
+          fecha,
           medicoId:     cita.medico?.id ?? '',
           especialidad: cita.medico?.especialidad ?? '',
           hospitalId:   cita.listaEspera?.hospital?.id ?? '',
@@ -54,6 +63,16 @@ function Reagendar() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
+    if (name === 'hospitalId') {
+      setFormData(prev => ({
+        ...prev,
+        hospitalId: value,
+        medicoId: '',
+        especialidad: '',
+      }));
+      return;
+    }
 
     if (name === 'medicoId') {
       const selected = medicos.find(m => m.id === Number(value));
@@ -84,8 +103,32 @@ function Reagendar() {
         }),
       });
       if (!res.ok) throw new Error();
+
       setReagendada(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      try {
+        console.log("Enviando correo a:", clienteActual.correo);
+        await fetch(
+          "https://rednorte-api-gateway-k27o.onrender.com/api/notificaciones/send-email",
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${Cookies.get("token")}`,
+            },
+            body: JSON.stringify({
+              to: clienteActual.correo,
+              tipoAviso: "citaCambiada",
+              fechaAnterior: fechaOriginal,
+              fecha: formData.fecha,
+            }),
+          }
+        );
+      } catch (err) {
+        console.warn("No se pudo enviar el correo:", err);
+      }
+
       setTimeout(() => navigate('/tus-citas'), 2000);
     } catch {
       alert('No se pudo reagendar. Intenta nuevamente.');
@@ -177,6 +220,19 @@ function Reagendar() {
             <h2 className="schedules-section-title schedules-section-title-light">Datos Médicos</h2>
 
             <Row className="mb-3 align-items-center">
+              <Col xs={2}><Form.Label className="schedules-label schedules-label-light">Centro Medico</Form.Label></Col>
+              <Col xs={4}>
+                <Form.Select className="schedules-input" name="hospitalId"
+                  value={formData.hospitalId} onChange={handleChange} required>
+                  <option value="">Seleccionar hospital...</option>
+                  {hospitales.map(h => (
+                    <option key={h.id} value={h.id}>{h.nombre}</option>
+                  ))}
+                </Form.Select>
+              </Col>
+            </Row>
+
+            <Row className="mb-3 align-items-center">
               <Col xs={2}><Form.Label className="schedules-label schedules-label-light">Medico</Form.Label></Col>
               <Col xs={4}>
                 <Form.Select className="schedules-input" name="medicoId"
@@ -191,19 +247,6 @@ function Reagendar() {
               <Col xs={4}>
                 <Form.Control className="schedules-input" type="text"
                   value={formData.especialidad} readOnly />
-              </Col>
-            </Row>
-
-            <Row className="align-items-center">
-              <Col xs={2}><Form.Label className="schedules-label schedules-label-light">Centro Medico</Form.Label></Col>
-              <Col xs={4}>
-                <Form.Select className="schedules-input" name="hospitalId"
-                  value={formData.hospitalId} onChange={handleChange} required>
-                  <option value="">Seleccionar hospital...</option>
-                  {hospitales.map(h => (
-                    <option key={h.id} value={h.id}>{h.nombre}</option>
-                  ))}
-                </Form.Select>
               </Col>
             </Row>
           </div>
