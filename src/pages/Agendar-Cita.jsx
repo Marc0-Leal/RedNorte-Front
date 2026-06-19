@@ -99,7 +99,7 @@ function Agendar() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
     let nuevoPagoId = null;
-    
+
     const handleSubmit = async (e) => {
     e.preventDefault();
     if (!clienteActual) {
@@ -120,7 +120,8 @@ function Agendar() {
       if (pago && pago.id) {
         nuevoPagoId = pago.id;
       }
-      await ListaEsperaService.create({
+      const hospital = await HospitalService.getById(Number(formData.hospitalId));
+      const listaEspera = await ListaEsperaService.create({
         fecha_solitud: formData.fecha,
         prioridad: "Normal",
         hospital: hospital,
@@ -137,7 +138,7 @@ function Agendar() {
         cliente: Number(clienteActual.id),  // ID directo como número
         sintomas: formData.sintomas,
         pago: nuevoPagoId ? Number(nuevoPagoId) : null, // ID mapeado sin romper el scope
-        listaEspera: null
+        listaEspera: { id: listaEspera.id },
       });
 
 // Bloque de notificaciones por correo
