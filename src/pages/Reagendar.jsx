@@ -121,7 +121,7 @@ function Reagendar() {
               to: clienteActual.correo,
               tipoAviso: "citaCambiada",
               fechaAnterior: fechaOriginal,
-              fecha: formData.fecha,
+              fechaNueva: formData.fecha,
             }),
           }
         );
